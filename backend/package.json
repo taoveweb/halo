@@ -1,0 +1,18 @@
+{
+  "name": "halo-twitter-backend",
+  "version": "1.0.0",
+  "description": "Node.js Express backend for a Twitter-like app",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "lint": "node -e \"console.log('No lint configured')\""
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "morgan": "^1.10.0",
+    "nanoid": "^5.0.7"
+  }
+}
