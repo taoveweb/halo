@@ -5,7 +5,9 @@
   "main": "src/index.js",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/ensureEnv.js",
     "dev": "node --watch src/index.js",
+    "prestart": "node scripts/ensureEnv.js",
     "start": "node src/index.js",
     "lint": "node -e \"console.log('No lint configured')\""
   },

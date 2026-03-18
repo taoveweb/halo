@@ -3,11 +3,12 @@
 ## 快速开始
 ```bash
 npm install
-cp .env.example .env
 npm run dev
 ```
 
 > 应用启动时会自动创建 `tweets/comments` 表，并在空库时自动初始化种子数据。
+> 首次运行 `npm run dev` / `npm start` 时，如果 `.env` 不存在，后端会自动基于 `.env.example` 生成。
+
 
 ## API
 - `GET /health`
