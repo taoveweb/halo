@@ -22,6 +22,7 @@ class ProfileController extends GetxController {
   final RxBool isSaving = false.obs;
   final RxBool isUploadingAvatar = false.obs;
   final Rxn<Uint8List> localAvatarBytes = Rxn<Uint8List>();
+  final RxBool avatarCleared = false.obs;
 
   final TextEditingController nameController = TextEditingController();
   final TextEditingController handleController = TextEditingController();
@@ -55,6 +56,7 @@ class ProfileController extends GetxController {
     if (localAvatarBytes.value == null) {
       avatarUrl.value = user.avatarUrl ?? '';
     }
+    avatarCleared.value = false;
 
     nameController.text = user.name;
     handleController.text = user.handle;
@@ -78,7 +80,6 @@ class ProfileController extends GetxController {
     final nextHandle = handleController.text.trim();
     final nextEmail = emailController.text.trim().toLowerCase();
     final nextAvatar = avatarController.text.trim();
-    final pickedAvatarBytes = localAvatarBytes.value;
     final currentPassword = currentPasswordController.text.trim();
     final newPassword = newPasswordController.text.trim();
 
@@ -99,13 +100,8 @@ class ProfileController extends GetxController {
 
     try {
       isSaving.value = true;
-      String? avatarToSave = nextAvatar.isNotEmpty ? nextAvatar : null;
-      bool clearAvatar = nextAvatar.isEmpty;
-
-      if (pickedAvatarBytes != null) {
-        avatarToSave = await _authController.uploadAvatar(pickedAvatarBytes);
-        clearAvatar = false;
-      }
+      final String? avatarToSave = nextAvatar.isNotEmpty ? nextAvatar : null;
+      final bool clearAvatar = avatarCleared.value;
 
       await _authController.updateProfile(
         name: name,
@@ -120,6 +116,7 @@ class ProfileController extends GetxController {
       currentPasswordController.clear();
       newPasswordController.clear();
       localAvatarBytes.value = null;
+      avatarCleared.value = false;
       _syncFromAuth();
       Get.back<void>();
       Get.snackbar('成功', '个人资料已更新');
@@ -148,10 +145,16 @@ class ProfileController extends GetxController {
       isUploadingAvatar.value = true;
       final bytes = await file.readAsBytes();
       localAvatarBytes.value = bytes;
-      avatarUrl.value = '';
-      avatarController.clear();
-      Get.snackbar('成功', '已选择本地头像，保存资料后生效');
+      final remoteAvatar = await _authController.uploadAvatar(
+        bytes,
+        mimeType: _inferMimeType(file.path),
+      );
+      avatarUrl.value = remoteAvatar;
+      avatarController.text = remoteAvatar;
+      avatarCleared.value = false;
+      Get.snackbar('成功', '头像已上传，点击保存修改后生效');
     } catch (e) {
+      localAvatarBytes.value = null;
       Get.snackbar('上传失败', e.toString());
     } finally {
       isUploadingAvatar.value = false;
@@ -162,6 +165,15 @@ class ProfileController extends GetxController {
     avatarController.clear();
     avatarUrl.value = '';
     localAvatarBytes.value = null;
+    avatarCleared.value = true;
+  }
+
+  String _inferMimeType(String path) {
+    final lower = path.toLowerCase();
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.webp')) return 'image/webp';
+    if (lower.endsWith('.gif')) return 'image/gif';
+    return 'image/jpeg';
   }
 
   @override
