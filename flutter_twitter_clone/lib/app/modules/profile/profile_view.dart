@@ -16,7 +16,16 @@ class ProfileView extends GetView<ProfileController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('个人资料')),
+      appBar: AppBar(
+        title: const Text('个人资料'),
+        actions: [
+          IconButton(
+            onPressed: controller.logout,
+            icon: const Icon(Icons.logout),
+            tooltip: '退出登录',
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Obx(

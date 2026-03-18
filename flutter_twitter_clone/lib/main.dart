@@ -18,7 +18,7 @@ class HaloTwitterApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Halo Social',
       initialBinding: InitialBinding(),
-      initialRoute: AppRoutes.home,
+      initialRoute: AppRoutes.login,
       getPages: AppPages.pages,
       theme: ThemeData(
         scaffoldBackgroundColor: Colors.black,

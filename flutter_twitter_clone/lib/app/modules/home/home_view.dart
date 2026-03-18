@@ -65,7 +65,13 @@ class HomeView extends GetView<HomeController> {
               final tweet = controller.tweets[index];
               return TweetCard(
                 tweet: tweet,
-                onTap: () => Get.toNamed(AppRoutes.tweetDetail, arguments: tweet),
+                onTap: () async {
+                  final updated =
+                      await Get.toNamed(AppRoutes.tweetDetail, arguments: tweet);
+                  if (updated == true) {
+                    controller.loadTimeline();
+                  }
+                },
               );
             },
           ),
