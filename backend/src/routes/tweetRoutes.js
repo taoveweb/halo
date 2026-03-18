@@ -6,7 +6,8 @@ import {
   getTweetById,
   getTweets,
   postComment,
-  postTweet
+  postTweet,
+  updateTweetInteraction
 } from '../controllers/tweetController.js';
 import { requireAuth } from '../middleware/auth.js';
 

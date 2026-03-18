@@ -57,17 +57,7 @@ class TweetDetailController extends GetxController {
       comments.add(created);
       commentInputController.clear();
       hasNewComment.value = true;
-      tweet.value = TweetModel(
-        id: current.id,
-        author: current.author,
-        handle: current.handle,
-        content: current.content,
-        createdAt: current.createdAt,
-        likes: current.likes,
-        comments: current.comments + 1,
-        retweets: current.retweets,
-        avatarUrl: current.avatarUrl,
-      );
+      tweet.value = current.copyWith(comments: current.comments + 1);
     } catch (e) {
       Get.snackbar('评论失败', e.toString(), snackPosition: SnackPosition.BOTTOM);
     } finally {

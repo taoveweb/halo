@@ -1,4 +1,5 @@
 import '../models/comment_model.dart';
+import '../models/topic_model.dart';
 import '../models/tweet_model.dart';
 import '../providers/tweet_provider.dart';
 
@@ -7,8 +8,8 @@ class TweetService {
 
   final TweetProvider _provider;
 
-  Future<List<TweetModel>> fetchTimeline() async {
-    final data = await _provider.fetchTimeline();
+  Future<List<TweetModel>> fetchTimeline({required String feed}) async {
+    final data = await _provider.fetchTimeline(feed: feed);
     return data
         .map((item) => TweetModel.fromJson(item as Map<String, dynamic>))
         .toList();
@@ -16,6 +17,17 @@ class TweetService {
 
   Future<TweetModel> createTweet(String content) async {
     final data = await _provider.postTweet(content: content);
+    return TweetModel.fromJson(data);
+  }
+
+  Future<TweetModel> likeTweet({required String tweetId, required bool active}) async {
+    final data = await _provider.updateTweetInteraction(tweetId: tweetId, action: 'like', active: active);
+    return TweetModel.fromJson(data);
+  }
+
+  Future<TweetModel> retweetTweet({required String tweetId, required bool active}) async {
+    final data =
+        await _provider.updateTweetInteraction(tweetId: tweetId, action: 'retweet', active: active);
     return TweetModel.fromJson(data);
   }
 
@@ -29,5 +41,15 @@ class TweetService {
   Future<CommentModel> createComment({required String tweetId, required String content}) async {
     final data = await _provider.postComment(tweetId: tweetId, content: content);
     return CommentModel.fromJson(data);
+  }
+
+  Future<List<TopicModel>> fetchTopics({String? query}) async {
+    final data = await _provider.fetchTopics(query: query);
+    return data.map((item) => TopicModel.fromJson(item as Map<String, dynamic>)).toList();
+  }
+
+  Future<TopicModel> updateTopicFollow({required String topicId, required bool active}) async {
+    final data = await _provider.updateTopicFollow(topicId: topicId, active: active);
+    return TopicModel.fromJson(data);
   }
 }

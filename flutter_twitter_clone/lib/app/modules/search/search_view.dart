@@ -43,6 +43,10 @@ class SearchView extends GetView<SocialController> {
             child: Obx(
               () {
                 final topics = controller.filteredTopics;
+                if (controller.topicLoading.value) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
                 return RefreshIndicator(
                   onRefresh: controller.refreshAll,
                   child: ListView.separated(
@@ -57,7 +61,7 @@ class SearchView extends GetView<SocialController> {
                         subtitle: Text('${item.posts} 条动态',
                             style: const TextStyle(color: Color(0xFF71767B))),
                         trailing: FilledButton.tonal(
-                          onPressed: () => controller.toggleTopicFollow(item),
+                          onPressed: () async => controller.toggleTopicFollow(item),
                           child: Text(item.following ? '已关注' : '关注'),
                         ),
                       );

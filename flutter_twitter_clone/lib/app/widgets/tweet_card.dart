@@ -3,38 +3,24 @@ import 'package:intl/intl.dart';
 
 import '../data/models/tweet_model.dart';
 
-class TweetCard extends StatefulWidget {
+class TweetCard extends StatelessWidget {
   const TweetCard({
     super.key,
     required this.tweet,
     this.onTap,
+    this.onLike,
+    this.onRetweet,
   });
 
   final TweetModel tweet;
   final VoidCallback? onTap;
-
-  @override
-  State<TweetCard> createState() => _TweetCardState();
-}
-
-class _TweetCardState extends State<TweetCard> {
-  late int likes;
-  late int retweets;
-  bool liked = false;
-  bool retweeted = false;
-
-  @override
-  void initState() {
-    super.initState();
-    likes = widget.tweet.likes;
-    retweets = widget.tweet.retweets;
-  }
+  final VoidCallback? onLike;
+  final VoidCallback? onRetweet;
 
   @override
   Widget build(BuildContext context) {
-    final tweet = widget.tweet;
     return InkWell(
-      onTap: widget.onTap,
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: const BoxDecoration(
@@ -82,26 +68,16 @@ class _TweetCardState extends State<TweetCard> {
                     children: [
                       _StatItem(icon: Icons.chat_bubble_outline, value: tweet.comments),
                       _StatItem(
-                        icon: retweeted ? Icons.repeat_on : Icons.repeat,
-                        value: retweets,
-                        color: retweeted ? const Color(0xFF00BA7C) : null,
-                        onTap: () {
-                          setState(() {
-                            retweeted = !retweeted;
-                            retweets += retweeted ? 1 : -1;
-                          });
-                        },
+                        icon: tweet.isRetweeted ? Icons.repeat_on : Icons.repeat,
+                        value: tweet.retweets,
+                        color: tweet.isRetweeted ? const Color(0xFF00BA7C) : null,
+                        onTap: onRetweet,
                       ),
                       _StatItem(
-                        icon: liked ? Icons.favorite : Icons.favorite_border,
-                        value: likes,
-                        color: liked ? const Color(0xFFF91880) : null,
-                        onTap: () {
-                          setState(() {
-                            liked = !liked;
-                            likes += liked ? 1 : -1;
-                          });
-                        },
+                        icon: tweet.isLiked ? Icons.favorite : Icons.favorite_border,
+                        value: tweet.likes,
+                        color: tweet.isLiked ? const Color(0xFFF91880) : null,
+                        onTap: onLike,
                       ),
                       const Icon(Icons.share_outlined, color: Color(0xFF71767B), size: 18),
                     ],

@@ -2,6 +2,17 @@ import { pool } from './mysql.js';
 import { seedTemplates } from '../data/seedData.js';
 import { hashPassword } from '../utils/password.js';
 
+const seedTopics = [
+  { title: '#Flutter', posts: 12000 },
+  { title: '#GetX', posts: 4362 },
+  { title: '#HaloSocial', posts: 2993 },
+  { title: '#AIProductivity', posts: 8501 },
+  { title: '#OpenSource', posts: 6218 },
+  { title: '#NodeJS', posts: 3887 }
+];
+
+const seedFollowing = ['@halo_dev', '@jane_ui', '@dev_tom', '@flutter_cn'];
+
 export async function initDb() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
@@ -69,30 +80,83 @@ export async function initDb() {
     return;
   }
 
-  for (const template of seedTemplates) {
-    const createdAt = new Date(Date.now() - 1000 * 60 * template.minutesAgo);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS topics (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      title VARCHAR(80) NOT NULL,
+      posts INT NOT NULL DEFAULT 0,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_topics_title (title)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
 
-    const [tweetResult] = await pool.query(
-      `INSERT INTO tweets (author, handle, content, likes, comments, retweets, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        template.author,
-        template.handle,
-        template.content,
-        template.likes,
-        template.commentTemplates.length,
-        template.retweets,
-        createdAt
-      ]
-    );
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_topic_follows (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      user_handle VARCHAR(80) NOT NULL,
+      topic_id BIGINT UNSIGNED NOT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_user_topic (user_handle, topic_id),
+      CONSTRAINT fk_user_topic_topic FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
 
-    for (const comment of template.commentTemplates) {
-      const commentTime = new Date(Date.now() - 1000 * 60 * comment.minutesAgo);
-      await pool.query(
-        `INSERT INTO comments (tweet_id, author, handle, content, created_at)
-         VALUES (?, ?, ?, ?, ?)`,
-        [tweetResult.insertId, comment.author, comment.handle, comment.content, commentTime]
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_following (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      user_handle VARCHAR(80) NOT NULL,
+      target_handle VARCHAR(80) NOT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_user_following (user_handle, target_handle)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
+
+  const [existingTweets] = await pool.query('SELECT COUNT(*) AS count FROM tweets');
+  if (existingTweets[0].count === 0) {
+    for (const template of seedTemplates) {
+      const createdAt = new Date(Date.now() - 1000 * 60 * template.minutesAgo);
+
+      const [tweetResult] = await pool.query(
+        `INSERT INTO tweets (author, handle, content, likes, comments, retweets, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          template.author,
+          template.handle,
+          template.content,
+          template.likes,
+          template.commentTemplates.length,
+          template.retweets,
+          createdAt
+        ]
       );
+
+      for (const comment of template.commentTemplates) {
+        const commentTime = new Date(Date.now() - 1000 * 60 * comment.minutesAgo);
+        await pool.query(
+          `INSERT INTO comments (tweet_id, author, handle, content, created_at)
+           VALUES (?, ?, ?, ?, ?)`,
+          [tweetResult.insertId, comment.author, comment.handle, comment.content, commentTime]
+        );
+      }
     }
+  }
+
+  for (const topic of seedTopics) {
+    await pool.query(
+      `INSERT INTO topics (title, posts)
+       VALUES (?, ?)
+       ON DUPLICATE KEY UPDATE posts = VALUES(posts)`,
+      [topic.title, topic.posts]
+    );
+  }
+
+  for (const handle of seedFollowing) {
+    await pool.query(
+      `INSERT IGNORE INTO user_following (user_handle, target_handle)
+       VALUES ('@you', ?)`,
+      [handle]
+    );
   }
 }
