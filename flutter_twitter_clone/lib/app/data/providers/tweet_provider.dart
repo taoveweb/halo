@@ -30,4 +30,28 @@ class TweetProvider {
 
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
+
+  Future<List<dynamic>> fetchComments(String tweetId) async {
+    final response = await _client.get(Uri.parse('${ApiConstants.baseUrl}/tweets/$tweetId/comments'));
+
+    if (response.statusCode != 200) {
+      throw Exception('加载评论失败: ${response.body}');
+    }
+
+    return jsonDecode(response.body) as List<dynamic>;
+  }
+
+  Future<Map<String, dynamic>> postComment({required String tweetId, required String content}) async {
+    final response = await _client.post(
+      Uri.parse('${ApiConstants.baseUrl}/tweets/$tweetId/comments'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'content': content}),
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception('评论失败: ${response.body}');
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
 }

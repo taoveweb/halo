@@ -1,7 +1,10 @@
+import 'dotenv/config';
+
 import cors from 'cors';
 import express from 'express';
 import morgan from 'morgan';
 
+import { initDb } from './db/initDb.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import tweetRoutes from './routes/tweetRoutes.js';
 
@@ -20,6 +23,13 @@ app.use('/api', tweetRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`Backend running on http://localhost:${PORT}`);
-});
+initDb()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Backend running on http://localhost:${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error('Failed to initialize database:', error);
+    process.exit(1);
+  });

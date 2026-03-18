@@ -3,12 +3,13 @@
 该仓库包含两部分：
 
 - `flutter_twitter_clone/`：Flutter 客户端（GetX）
-- `backend/`：Node.js + Express API
+- `backend/`：Node.js + Express + MySQL API
 
 ## 1) 启动后端
 ```bash
 cd backend
 npm install
+cp .env.example .env
 npm run dev
 ```
 

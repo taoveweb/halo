@@ -1,3 +1,4 @@
+import '../models/comment_model.dart';
 import '../models/tweet_model.dart';
 import '../providers/tweet_provider.dart';
 
@@ -16,5 +17,17 @@ class TweetService {
   Future<TweetModel> createTweet(String content) async {
     final data = await _provider.postTweet(content: content);
     return TweetModel.fromJson(data);
+  }
+
+  Future<List<CommentModel>> fetchComments(String tweetId) async {
+    final data = await _provider.fetchComments(tweetId);
+    return data
+        .map((item) => CommentModel.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<CommentModel> createComment({required String tweetId, required String content}) async {
+    final data = await _provider.postComment(tweetId: tweetId, content: content);
+    return CommentModel.fromJson(data);
   }
 }
