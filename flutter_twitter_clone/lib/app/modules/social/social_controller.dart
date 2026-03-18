@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:get/get.dart';
 
 import '../../data/models/topic_model.dart';
@@ -58,6 +60,7 @@ class SocialController extends GetxController {
 
   final RxList<TopicModel> topics = <TopicModel>[].obs;
   final RxBool topicLoading = false.obs;
+  final RxnString topicError = RxnString();
 
   final RxList<NotificationItem> notifications = <NotificationItem>[
     NotificationItem(id: 'n1', title: 'Halo Team 赞了你的动态', minutesAgo: 2),
@@ -86,6 +89,7 @@ class SocialController extends GetxController {
 
   final RxString searchQuery = ''.obs;
   final RxInt selectedNotificationFilter = 0.obs;
+  Timer? _searchDebounce;
 
   @override
   void onInit() {
@@ -96,8 +100,11 @@ class SocialController extends GetxController {
   Future<void> loadTopics() async {
     try {
       topicLoading.value = true;
+      topicError.value = null;
       final items = await _tweetService.fetchTopics(query: searchQuery.value.trim());
       topics.assignAll(items);
+    } catch (error) {
+      topicError.value = error.toString();
     } finally {
       topicLoading.value = false;
     }
@@ -118,6 +125,17 @@ class SocialController extends GetxController {
 
   void setSearchQuery(String value) {
     searchQuery.value = value;
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), loadTopics);
+  }
+
+  void clearSearchQuery() {
+    if (searchQuery.value.isEmpty) {
+      return;
+    }
+
+    searchQuery.value = '';
+    _searchDebounce?.cancel();
     loadTopics();
   }
 
@@ -163,5 +181,11 @@ class SocialController extends GetxController {
     item.joined = !item.joined;
     item.members += item.joined ? 1 : -1;
     communities.refresh();
+  }
+
+  @override
+  void onClose() {
+    _searchDebounce?.cancel();
+    super.onClose();
   }
 }

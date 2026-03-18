@@ -5,8 +5,28 @@ import '../../routes/app_routes.dart';
 import '../../widgets/app_bottom_nav.dart';
 import '../social/social_controller.dart';
 
-class SearchView extends GetView<SocialController> {
+class SearchView extends StatefulWidget {
   const SearchView({super.key});
+
+  @override
+  State<SearchView> createState() => _SearchViewState();
+}
+
+class _SearchViewState extends State<SearchView> {
+  final SocialController controller = Get.find<SocialController>();
+  late final TextEditingController _searchTextController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchTextController = TextEditingController(text: controller.searchQuery.value);
+  }
+
+  @override
+  void dispose() {
+    _searchTextController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,16 +45,31 @@ class SearchView extends GetView<SocialController> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-            child: TextField(
-              onChanged: controller.setSearchQuery,
-              decoration: InputDecoration(
-                hintText: '搜索话题或关键字',
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: const Color(0xFF16181C),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
+            child: Obx(
+              () => TextField(
+                controller: _searchTextController,
+                onChanged: controller.setSearchQuery,
+                onSubmitted: (_) => controller.loadTopics(),
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  hintText: '搜索话题或关键字',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: controller.searchQuery.value.isEmpty
+                      ? null
+                      : IconButton(
+                          onPressed: () {
+                            _searchTextController.clear();
+                            controller.clearSearchQuery();
+                          },
+                          icon: const Icon(Icons.close),
+                          tooltip: '清空搜索',
+                        ),
+                  filled: true,
+                  fillColor: const Color(0xFF16181C),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
               ),
             ),
@@ -45,6 +80,36 @@ class SearchView extends GetView<SocialController> {
                 final topics = controller.filteredTopics;
                 if (controller.topicLoading.value) {
                   return const Center(child: CircularProgressIndicator());
+                }
+                if (controller.topicError.value != null) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.error_outline, size: 40, color: Color(0xFF71767B)),
+                          const SizedBox(height: 10),
+                          const Text('搜索失败，请检查网络后重试'),
+                          const SizedBox(height: 12),
+                          FilledButton(
+                            onPressed: controller.loadTopics,
+                            child: const Text('重试'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+                if (topics.isEmpty) {
+                  return Center(
+                    child: Text(
+                      controller.searchQuery.value.trim().isEmpty
+                          ? '暂无推荐话题'
+                          : '没有找到相关话题，换个关键词试试',
+                      style: const TextStyle(color: Color(0xFF71767B)),
+                    ),
+                  );
                 }
 
                 return RefreshIndicator(
