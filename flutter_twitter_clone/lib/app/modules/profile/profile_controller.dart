@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../auth/auth_controller.dart';
 
@@ -18,6 +20,8 @@ class ProfileController extends GetxController {
   final RxInt following = 86.obs;
   final RxBool isFollowing = false.obs;
   final RxBool isSaving = false.obs;
+  final RxBool isUploadingAvatar = false.obs;
+  final Rxn<Uint8List> localAvatarBytes = Rxn<Uint8List>();
 
   final TextEditingController nameController = TextEditingController();
   final TextEditingController handleController = TextEditingController();
@@ -27,6 +31,7 @@ class ProfileController extends GetxController {
   final TextEditingController newPasswordController = TextEditingController();
 
   Timer? _timer;
+  final ImagePicker _imagePicker = ImagePicker();
 
   @override
   void onInit() {
@@ -47,7 +52,9 @@ class ProfileController extends GetxController {
     username.value = user.name;
     handle.value = user.handle;
     email.value = user.email;
-    avatarUrl.value = user.avatarUrl ?? '';
+    if (localAvatarBytes.value == null) {
+      avatarUrl.value = user.avatarUrl ?? '';
+    }
 
     nameController.text = user.name;
     handleController.text = user.handle;
@@ -95,8 +102,8 @@ class ProfileController extends GetxController {
         name: name,
         handle: nextHandle,
         email: nextEmail,
-        avatarUrl: nextAvatar.isEmpty ? null : nextAvatar,
-        clearAvatar: nextAvatar.isEmpty,
+        avatarUrl: localAvatarBytes.value == null && nextAvatar.isNotEmpty ? nextAvatar : null,
+        clearAvatar: localAvatarBytes.value == null && nextAvatar.isEmpty,
         currentPassword: newPassword.isNotEmpty ? currentPassword : null,
         newPassword: newPassword.isNotEmpty ? newPassword : null,
       );
@@ -111,6 +118,40 @@ class ProfileController extends GetxController {
     } finally {
       isSaving.value = false;
     }
+  }
+
+  Future<void> pickAvatarFromLocal() async {
+    if (isUploadingAvatar.value) return;
+
+    final file = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 85,
+    );
+
+    if (file == null) {
+      return;
+    }
+
+    try {
+      isUploadingAvatar.value = true;
+      final bytes = await file.readAsBytes();
+      localAvatarBytes.value = bytes;
+      avatarUrl.value = '';
+      avatarController.clear();
+      Get.snackbar('成功', '已选择本地头像，保存资料后生效');
+    } catch (e) {
+      Get.snackbar('上传失败', e.toString());
+    } finally {
+      isUploadingAvatar.value = false;
+    }
+  }
+
+  void clearAvatar() {
+    avatarController.clear();
+    avatarUrl.value = '';
+    localAvatarBytes.value = null;
   }
 
   @override

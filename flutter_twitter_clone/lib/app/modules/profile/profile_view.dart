@@ -41,7 +41,7 @@ class ProfileView extends GetView<ProfileController> {
             },
             child: ListView(
               children: [
-                _buildAvatar(),
+                Center(child: _buildAvatar(canEdit: true)),
                 const SizedBox(height: 12),
                 Text(controller.username.value,
                     style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
@@ -78,16 +78,56 @@ class ProfileView extends GetView<ProfileController> {
     );
   }
 
-  Widget _buildAvatar() {
+  Widget _buildAvatar({bool canEdit = false}) {
+    final localBytes = controller.localAvatarBytes.value;
     final url = controller.avatarUrl.value;
-    if (url.isNotEmpty) {
-      return CircleAvatar(
-        radius: 38,
-        backgroundImage: NetworkImage(url),
-        onBackgroundImageError: (_, __) {},
-      );
+    final avatar = localBytes != null
+        ? CircleAvatar(
+            radius: 38,
+            backgroundImage: MemoryImage(localBytes),
+          )
+        : url.isNotEmpty
+        ? CircleAvatar(
+            radius: 38,
+            backgroundImage: NetworkImage(url),
+            onBackgroundImageError: (_, __) {},
+          )
+        : const CircleAvatar(radius: 38, child: Icon(Icons.person, size: 40));
+    if (!canEdit) {
+      return avatar;
     }
-    return const CircleAvatar(radius: 38, child: Icon(Icons.person, size: 40));
+
+    return GestureDetector(
+      onTap: controller.isUploadingAvatar.value ? null : controller.pickAvatarFromLocal,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          avatar,
+          Positioned(
+            right: -2,
+            bottom: -2,
+            child: Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1D9BF0),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Get.theme.scaffoldBackgroundColor, width: 2),
+              ),
+              child: controller.isUploadingAvatar.value
+                  ? const Padding(
+                      padding: EdgeInsets.all(6),
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Icon(Icons.camera_alt, size: 14, color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showEditSheet() {
@@ -106,6 +146,16 @@ class ProfileView extends GetView<ProfileController> {
                 children: [
                   const Text('编辑资料', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 12),
+                  _buildAvatar(canEdit: true),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: controller.clearAvatar,
+                      icon: const Icon(Icons.delete_outline),
+                      label: const Text('移除头像'),
+                    ),
+                  ),
                   TextField(
                     controller: controller.nameController,
                     decoration: const InputDecoration(labelText: '昵称'),
@@ -117,10 +167,6 @@ class ProfileView extends GetView<ProfileController> {
                   TextField(
                     controller: controller.emailController,
                     decoration: const InputDecoration(labelText: '邮箱'),
-                  ),
-                  TextField(
-                    controller: controller.avatarController,
-                    decoration: const InputDecoration(labelText: '头像 URL（留空将清除）'),
                   ),
                   const SizedBox(height: 8),
                   TextField(
