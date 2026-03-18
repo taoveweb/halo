@@ -4,6 +4,7 @@
 
 - `flutter_twitter_clone/`：Flutter 客户端（GetX）
 - `backend/`：Node.js + Express + MySQL API
+- `admin-web/`：Vue3 + Element Plus + Pinia 后台管理系统
 
 ## 1) 启动后端
 ```bash
@@ -13,7 +14,14 @@ cp .env.example .env
 npm run dev
 ```
 
-## 2) 启动 Flutter
+## 2) 启动后台管理系统
+```bash
+cd admin-web
+npm install
+npm run dev
+```
+
+## 3) 启动 Flutter
 ```bash
 cd flutter_twitter_clone
 flutter pub get

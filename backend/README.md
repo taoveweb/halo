@@ -42,3 +42,18 @@ npm run dev
   "password": "123456"
 }
 ```
+
+
+## Admin API
+- `POST /api/admin/auth/login`
+- `GET /api/admin/auth/me`（需要 Bearer Token）
+- `POST /api/admin/auth/logout`（需要 Bearer Token）
+- `GET /api/admin/dashboard`（需要 Bearer Token）
+- `GET /api/admin/tweets`（需要 Bearer Token）
+- `DELETE /api/admin/tweets/:id`（需要 Bearer Token）
+
+### 默认后台账号
+- 用户名：`admin`
+- 密码：`admin123456`
+
+> 可通过 `.env` 中的 `ADMIN_USERNAME`、`ADMIN_PASSWORD` 覆盖默认账号。
