@@ -1,42 +1,90 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../data/models/auth_user_model.dart';
+import '../../data/providers/tweet_provider.dart';
+import '../../data/services/auth_service.dart';
 import '../../routes/app_routes.dart';
 
-class AuthUser {
-  AuthUser({
-    required this.name,
-    required this.handle,
-    required this.email,
-    required this.password,
-  });
-
-  String name;
-  String handle;
-  final String email;
-  final String password;
-}
-
 class AuthController extends GetxController {
-  final Rxn<AuthUser> currentUser = Rxn<AuthUser>();
+  AuthController(this._authService, this._tweetProvider);
+
+  static const _sessionTokenKey = 'session_token';
+  static const _sessionUserKey = 'session_user';
+
+  final AuthService _authService;
+  final TweetProvider _tweetProvider;
+
+  final Rxn<AuthUserModel> currentUser = Rxn<AuthUserModel>();
+  final RxnString token = RxnString();
   final RxBool isLoginMode = true.obs;
   final RxBool isSubmitting = false.obs;
+  final RxBool isBootstrapping = true.obs;
 
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController nameController = TextEditingController();
   final TextEditingController handleController = TextEditingController();
 
-  final List<AuthUser> _users = <AuthUser>[
-    AuthUser(
-      name: 'Halo User',
-      handle: '@halo_user',
-      email: 'halo@example.com',
-      password: '123456',
-    ),
-  ];
+  bool get isLoggedIn => currentUser.value != null && (token.value?.isNotEmpty ?? false);
 
-  bool get isLoggedIn => currentUser.value != null;
+  @override
+  void onInit() {
+    super.onInit();
+    _restoreSession();
+  }
+
+  Future<void> _restoreSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedToken = prefs.getString(_sessionTokenKey);
+      final savedUserRaw = prefs.getString(_sessionUserKey);
+      if (savedToken == null || savedUserRaw == null) {
+        return;
+      }
+
+      token.value = savedToken;
+      _tweetProvider.setAuthToken(savedToken);
+
+      final savedUserMap = jsonDecode(savedUserRaw) as Map<String, dynamic>;
+      currentUser.value = AuthUserModel.fromJson(savedUserMap);
+
+      final verifiedUser = await _authService.fetchMe(savedToken);
+      currentUser.value = verifiedUser;
+      await prefs.setString(_sessionUserKey, jsonEncode(verifiedUser.toJson()));
+
+      if (Get.currentRoute == AppRoutes.login) {
+        Get.offAllNamed(AppRoutes.home);
+      }
+    } catch (_) {
+      await _clearSession();
+    } finally {
+      isBootstrapping.value = false;
+    }
+  }
+
+  Future<void> _saveSession({required String sessionToken, required AuthUserModel user}) async {
+    token.value = sessionToken;
+    currentUser.value = user;
+    _tweetProvider.setAuthToken(sessionToken);
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_sessionTokenKey, sessionToken);
+    await prefs.setString(_sessionUserKey, jsonEncode(user.toJson()));
+  }
+
+  Future<void> _clearSession() async {
+    token.value = null;
+    currentUser.value = null;
+    _tweetProvider.setAuthToken(null);
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_sessionTokenKey);
+    await prefs.remove(_sessionUserKey);
+  }
 
   void toggleMode() {
     isLoginMode.toggle();
@@ -68,50 +116,37 @@ class AuthController extends GetxController {
 
     try {
       isSubmitting.value = true;
-      await Future<void>.delayed(const Duration(milliseconds: 350));
 
-      if (isLoginMode.value) {
-        AuthUser? user;
-        for (final item in _users) {
-          if (item.email == email) {
-            user = item;
-            break;
-          }
-        }
-        if (user == null || user.password != password) {
-          Get.snackbar('登录失败', '邮箱或密码错误');
-          return;
-        }
-        currentUser.value = user;
-      } else {
-        if (_users.any((item) => item.email == email)) {
-          Get.snackbar('注册失败', '该邮箱已被注册');
-          return;
-        }
-        final normalizedHandle = handleController.text.trim().startsWith('@')
-            ? handleController.text.trim()
-            : '@${handleController.text.trim()}';
-        final created = AuthUser(
-          name: nameController.text.trim(),
-          handle: normalizedHandle,
-          email: email,
-          password: password,
-        );
-        _users.add(created);
-        currentUser.value = created;
-      }
+      final result = isLoginMode.value
+          ? await _authService.login(email: email, password: password)
+          : await _authService.register(
+              name: nameController.text.trim(),
+              handle: handleController.text.trim(),
+              email: email,
+              password: password,
+            );
 
+      await _saveSession(sessionToken: result.token, user: result.user);
       Get.offAllNamed(AppRoutes.home);
       Get.snackbar('成功', isLoginMode.value ? '欢迎回来' : '注册成功');
+    } catch (e) {
+      Get.snackbar(isLoginMode.value ? '登录失败' : '注册失败', e.toString());
     } finally {
       isSubmitting.value = false;
     }
   }
 
-  void logout() {
-    currentUser.value = null;
-    passwordController.clear();
-    Get.offAllNamed(AppRoutes.login);
+  Future<void> logout() async {
+    final currentToken = token.value;
+    try {
+      if (currentToken != null && currentToken.isNotEmpty) {
+        await _authService.logout(currentToken);
+      }
+    } finally {
+      await _clearSession();
+      passwordController.clear();
+      Get.offAllNamed(AppRoutes.login);
+    }
   }
 
   @override

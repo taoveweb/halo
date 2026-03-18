@@ -6,6 +6,19 @@ import '../../core/constants/api_constants.dart';
 
 class TweetProvider {
   final http.Client _client = http.Client();
+  String? _token;
+
+  void setAuthToken(String? token) {
+    _token = token;
+  }
+
+  Map<String, String> _jsonHeaders() {
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    if (_token != null && _token!.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $_token';
+    }
+    return headers;
+  }
 
   Future<List<dynamic>> fetchTimeline({required String feed}) async {
     final uri = Uri.parse('${ApiConstants.baseUrl}/tweets?feed=$feed');
@@ -21,7 +34,7 @@ class TweetProvider {
   Future<Map<String, dynamic>> postTweet({required String content}) async {
     final response = await _client.post(
       Uri.parse('${ApiConstants.baseUrl}/tweets'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _jsonHeaders(),
       body: jsonEncode({'content': content}),
     );
 
@@ -63,7 +76,7 @@ class TweetProvider {
   Future<Map<String, dynamic>> postComment({required String tweetId, required String content}) async {
     final response = await _client.post(
       Uri.parse('${ApiConstants.baseUrl}/tweets/$tweetId/comments'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _jsonHeaders(),
       body: jsonEncode({'content': content}),
     );
 

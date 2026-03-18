@@ -1,5 +1,6 @@
 import { Router } from 'express';
 
+import { login, logout, me, register } from '../controllers/authController.js';
 import {
   getCommentsByTweetId,
   getTweetById,
@@ -8,14 +9,19 @@ import {
   postTweet,
   updateTweetInteraction
 } from '../controllers/tweetController.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 
+router.post('/auth/register', register);
+router.post('/auth/login', login);
+router.get('/auth/me', requireAuth, me);
+router.post('/auth/logout', requireAuth, logout);
+
 router.get('/tweets', getTweets);
 router.get('/tweets/:id', getTweetById);
-router.post('/tweets', postTweet);
+router.post('/tweets', requireAuth, postTweet);
 router.get('/tweets/:id/comments', getCommentsByTweetId);
-router.post('/tweets/:id/comments', postComment);
-router.post('/tweets/:id/:action', updateTweetInteraction);
+router.post('/tweets/:id/comments', requireAuth, postComment);
 
 export default router;
