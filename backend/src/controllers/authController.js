@@ -8,7 +8,8 @@ function mapUser(row) {
     id: String(row.id),
     email: row.email,
     name: row.name,
-    handle: row.handle
+    handle: row.handle,
+    avatarUrl: row.avatar_url
   };
 }
 
@@ -29,7 +30,9 @@ async function createLoginResponse(userId) {
     [token, userId]
   );
 
-  const [rows] = await pool.query('SELECT id, email, name, handle FROM users WHERE id = ? LIMIT 1', [userId]);
+  const [rows] = await pool.query('SELECT id, email, name, handle, avatar_url FROM users WHERE id = ? LIMIT 1', [
+    userId
+  ]);
   return {
     token,
     user: mapUser(rows[0])
@@ -42,6 +45,7 @@ export async function register(req, res, next) {
     const password = req.body.password?.trim();
     const name = req.body.name?.trim();
     const handleRaw = req.body.handle?.trim();
+    const avatarUrl = req.body.avatarUrl?.trim() || null;
 
     if (!email || !password || !name || !handleRaw) {
       return res.status(400).json({ message: 'name, handle, email and password are required' });
@@ -60,9 +64,9 @@ export async function register(req, res, next) {
 
     try {
       const [result] = await pool.query(
-        `INSERT INTO users (email, password_hash, name, handle)
-         VALUES (?, ?, ?, ?)`,
-        [email, passwordHash, name, handle]
+        `INSERT INTO users (email, password_hash, name, handle, avatar_url)
+         VALUES (?, ?, ?, ?, ?)`,
+        [email, passwordHash, name, handle, avatarUrl]
       );
       const loginResponse = await createLoginResponse(result.insertId);
       return res.status(201).json(loginResponse);
@@ -87,7 +91,7 @@ export async function login(req, res, next) {
     }
 
     const [rows] = await pool.query(
-      'SELECT id, email, name, handle, password_hash FROM users WHERE email = ? LIMIT 1',
+      'SELECT id, email, name, handle, avatar_url, password_hash FROM users WHERE email = ? LIMIT 1',
       [email]
     );
 
@@ -104,6 +108,86 @@ export async function login(req, res, next) {
 
 export async function me(req, res) {
   return res.status(200).json(mapUser(req.authUser));
+}
+
+export async function updateProfile(req, res, next) {
+  try {
+    const userId = req.authUser.id;
+    const updates = {};
+
+    if (typeof req.body.name === 'string') {
+      const nextName = req.body.name.trim();
+      if (!nextName) {
+        return res.status(400).json({ message: 'name cannot be empty' });
+      }
+      updates.name = nextName;
+    }
+
+    if (typeof req.body.handle === 'string') {
+      const handle = normalizeHandle(req.body.handle);
+      if (handle.length < 2 || handle.length > 80) {
+        return res.status(400).json({ message: 'handle length is invalid' });
+      }
+      updates.handle = handle;
+    }
+
+    if (typeof req.body.avatarUrl === 'string' || req.body.avatarUrl === null) {
+      const avatarUrl = typeof req.body.avatarUrl === 'string' ? req.body.avatarUrl.trim() : null;
+      updates.avatar_url = avatarUrl || null;
+    }
+
+    if (typeof req.body.email === 'string') {
+      const email = req.body.email.trim().toLowerCase();
+      if (!email) {
+        return res.status(400).json({ message: 'email cannot be empty' });
+      }
+      updates.email = email;
+    }
+
+    if (req.body.newPassword != null) {
+      const currentPassword = req.body.currentPassword?.trim();
+      const newPassword = req.body.newPassword?.trim();
+
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: 'currentPassword and newPassword are required to change password' });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: 'new password must be at least 6 characters' });
+      }
+
+      const [rows] = await pool.query('SELECT password_hash FROM users WHERE id = ? LIMIT 1', [userId]);
+      if (rows.length === 0 || !verifyPassword(currentPassword, rows[0].password_hash)) {
+        return res.status(401).json({ message: 'current password is incorrect' });
+      }
+
+      updates.password_hash = hashPassword(newPassword);
+    }
+
+    const fields = Object.keys(updates);
+    if (fields.length === 0) {
+      return res.status(400).json({ message: 'no updatable fields were provided' });
+    }
+
+    const setClause = fields.map((field) => `${field} = ?`).join(', ');
+    const values = fields.map((field) => updates[field]);
+
+    try {
+      await pool.query(`UPDATE users SET ${setClause} WHERE id = ?`, [...values, userId]);
+    } catch (error) {
+      if (error.code === 'ER_DUP_ENTRY') {
+        return res.status(409).json({ message: 'email or handle already exists' });
+      }
+      throw error;
+    }
+
+    const [rows] = await pool.query('SELECT id, email, name, handle, avatar_url FROM users WHERE id = ? LIMIT 1', [
+      userId
+    ]);
+    return res.status(200).json(mapUser(rows[0]));
+  } catch (error) {
+    return next(error);
+  }
 }
 
 export async function logout(req, res, next) {

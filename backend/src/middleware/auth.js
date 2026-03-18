@@ -13,7 +13,7 @@ export async function requireAuth(req, res, next) {
     }
 
     const [rows] = await pool.query(
-      `SELECT u.id, u.email, u.name, u.handle
+      `SELECT u.id, u.email, u.name, u.handle, u.avatar_url
        FROM auth_tokens t
        INNER JOIN users u ON u.id = t.user_id
        WHERE t.token = ? AND t.expires_at > NOW()

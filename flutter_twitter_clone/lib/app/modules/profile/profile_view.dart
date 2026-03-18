@@ -20,6 +20,11 @@ class ProfileView extends GetView<ProfileController> {
         title: const Text('个人资料'),
         actions: [
           IconButton(
+            onPressed: _showEditSheet,
+            icon: const Icon(Icons.edit),
+            tooltip: '编辑资料',
+          ),
+          IconButton(
             onPressed: controller.logout,
             icon: const Icon(Icons.logout),
             tooltip: '退出登录',
@@ -36,12 +41,12 @@ class ProfileView extends GetView<ProfileController> {
             },
             child: ListView(
               children: [
-                const CircleAvatar(radius: 38, child: Icon(Icons.person, size: 40)),
+                _buildAvatar(),
                 const SizedBox(height: 12),
                 Text(controller.username.value,
                     style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                Text(controller.handle.value,
-                    style: const TextStyle(color: Color(0xFF71767B))),
+                Text(controller.handle.value, style: const TextStyle(color: Color(0xFF71767B))),
+                Text(controller.email.value, style: const TextStyle(color: Color(0xFF71767B))),
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -56,8 +61,7 @@ class ProfileView extends GetView<ProfileController> {
                   ],
                 ),
                 const SizedBox(height: 20),
-                const Text('近期动态亮点',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                const Text('近期动态亮点', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
                 ..._highlights.map(
                   (item) => ListTile(
@@ -71,6 +75,85 @@ class ProfileView extends GetView<ProfileController> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildAvatar() {
+    final url = controller.avatarUrl.value;
+    if (url.isNotEmpty) {
+      return CircleAvatar(
+        radius: 38,
+        backgroundImage: NetworkImage(url),
+        onBackgroundImageError: (_, __) {},
+      );
+    }
+    return const CircleAvatar(radius: 38, child: Icon(Icons.person, size: 40));
+  }
+
+  void _showEditSheet() {
+    Get.bottomSheet<void>(
+      SafeArea(
+        child: Container(
+          decoration: BoxDecoration(
+            color: Get.theme.scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: SingleChildScrollView(
+            child: Obx(
+              () => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('编辑资料', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: controller.nameController,
+                    decoration: const InputDecoration(labelText: '昵称'),
+                  ),
+                  TextField(
+                    controller: controller.handleController,
+                    decoration: const InputDecoration(labelText: '账号（@xxx）'),
+                  ),
+                  TextField(
+                    controller: controller.emailController,
+                    decoration: const InputDecoration(labelText: '邮箱'),
+                  ),
+                  TextField(
+                    controller: controller.avatarController,
+                    decoration: const InputDecoration(labelText: '头像 URL（留空将清除）'),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: controller.currentPasswordController,
+                    obscureText: true,
+                    decoration: const InputDecoration(labelText: '当前密码（修改密码必填）'),
+                  ),
+                  TextField(
+                    controller: controller.newPasswordController,
+                    obscureText: true,
+                    decoration: const InputDecoration(labelText: '新密码（可选）'),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: controller.isSaving.value ? null : controller.saveProfile,
+                      child: controller.isSaving.value
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('保存修改'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+      isScrollControlled: true,
     );
   }
 }

@@ -21,11 +21,17 @@ export async function initDb() {
       password_hash VARCHAR(255) NOT NULL,
       name VARCHAR(80) NOT NULL,
       handle VARCHAR(80) NOT NULL,
+      avatar_url VARCHAR(255) NULL,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (id),
       UNIQUE KEY uk_users_email (email),
       UNIQUE KEY uk_users_handle (handle)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
+
+  await pool.query(`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(255) NULL AFTER handle
   `);
 
   await pool.query(`
@@ -69,10 +75,10 @@ export async function initDb() {
   `);
 
   await pool.query(
-    `INSERT INTO users (email, password_hash, name, handle)
-     VALUES (?, ?, ?, ?)
+    `INSERT INTO users (email, password_hash, name, handle, avatar_url)
+     VALUES (?, ?, ?, ?, ?)
      ON DUPLICATE KEY UPDATE email = email`,
-    ['halo@example.com', hashPassword('123456'), 'Halo User', '@halo_user']
+    ['halo@example.com', hashPassword('123456'), 'Halo User', '@halo_user', null]
   );
 
   const [existing] = await pool.query('SELECT COUNT(*) AS count FROM tweets');
