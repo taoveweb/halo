@@ -149,6 +149,33 @@ class AuthController extends GetxController {
     }
   }
 
+  Future<void> updateProfile({
+    required String name,
+    required String handle,
+    required String email,
+    String? avatarUrl,
+    bool clearAvatar = false,
+    String? currentPassword,
+    String? newPassword,
+  }) async {
+    final currentToken = token.value;
+    if (currentToken == null || currentToken.isEmpty) {
+      throw Exception('当前未登录');
+    }
+
+    final updatedUser = await _authService.updateProfile(
+      token: currentToken,
+      name: name,
+      handle: handle,
+      email: email,
+      avatarUrl: avatarUrl,
+      clearAvatar: clearAvatar,
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+    );
+    await _saveSession(sessionToken: currentToken, user: updatedUser);
+  }
+
   @override
   void onClose() {
     emailController.dispose();

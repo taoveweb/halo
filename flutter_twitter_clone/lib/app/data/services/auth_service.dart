@@ -26,12 +26,14 @@ class AuthService {
     required String handle,
     required String email,
     required String password,
+    String? avatarUrl,
   }) async {
     final data = await _provider.register(
       name: name,
       handle: handle,
       email: email,
       password: password,
+      avatarUrl: avatarUrl,
     );
 
     return AuthResult(
@@ -42,6 +44,29 @@ class AuthService {
 
   Future<AuthUserModel> fetchMe(String token) async {
     final data = await _provider.fetchMe(token);
+    return AuthUserModel.fromJson(data);
+  }
+
+  Future<AuthUserModel> updateProfile({
+    required String token,
+    String? name,
+    String? handle,
+    String? email,
+    String? avatarUrl,
+    bool clearAvatar = false,
+    String? currentPassword,
+    String? newPassword,
+  }) async {
+    final data = await _provider.updateProfile(
+      token: token,
+      name: name,
+      handle: handle,
+      email: email,
+      avatarUrl: avatarUrl,
+      clearAvatar: clearAvatar,
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+    );
     return AuthUserModel.fromJson(data);
   }
 
