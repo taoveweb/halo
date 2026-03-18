@@ -11,6 +11,7 @@ import { errorHandler, notFound } from './middleware/errorHandler.js';
 import communityRoutes from './routes/communityRoutes.js';
 import tweetRoutes from './routes/tweetRoutes.js';
 import topicRoutes from './routes/topicRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -29,6 +30,7 @@ app.get('/health', (_req, res) => {
 app.use('/api', tweetRoutes);
 app.use('/api', topicRoutes);
 app.use('/api', communityRoutes);
+app.use('/api', adminRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
