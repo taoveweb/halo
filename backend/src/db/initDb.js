@@ -29,10 +29,16 @@ export async function initDb() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `);
 
-  await pool.query(`
-    ALTER TABLE users
-    ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(255) NULL AFTER handle
-  `);
+  // Older MySQL versions do not support `ADD COLUMN IF NOT EXISTS`.
+  // Check information_schema and add the column only when it's missing.
+  const [colRows] = await pool.query(
+    `SELECT COUNT(*) AS count FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+    [process.env.MYSQL_DATABASE, 'users', 'avatar_url']
+  );
+
+  if (colRows[0].count === 0) {
+    await pool.query(`ALTER TABLE users ADD COLUMN avatar_url VARCHAR(255) NULL AFTER handle`);
+  }
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS auth_tokens (
