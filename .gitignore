@@ -11,3 +11,4 @@ backend/node_modules/
 # Editor
 .vscode/
 .idea/
+backend/.env
