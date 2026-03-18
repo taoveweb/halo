@@ -15,20 +15,28 @@ class ApiConstants {
 
   static const String _testBaseUrl = String.fromEnvironment(
     'API_URL_TEST',
-    defaultValue: 'https://test-api.example.com/api',
+    defaultValue: 'http://172.20.10.2/api',
   );
 
   static const String _prodBaseUrl = String.fromEnvironment(
     'API_URL_PROD',
-    defaultValue: 'https://api.example.com/api',
+    defaultValue: 'http://172.20.10.2/api',
   );
 
   /// 最终 API 地址：
   /// 1) API_URL（强制覆盖）
   /// 2) 按 APP_ENV 选择 API_URL_DEV / API_URL_TEST / API_URL_PROD
-  static const String baseUrl = _overrideBaseUrl.isNotEmpty
-      ? _overrideBaseUrl
-      : (appEnv == 'prod'
-            ? _prodBaseUrl
-            : (appEnv == 'test' ? _testBaseUrl : _devBaseUrl));
+  static String get baseUrl {
+    if (_overrideBaseUrl.isNotEmpty) {
+      return _overrideBaseUrl;
+    }
+    switch (appEnv) {
+      case 'prod':
+        return _prodBaseUrl;
+      case 'test':
+        return _testBaseUrl;
+      default:
+        return _devBaseUrl;
+    }
+  }
 }
