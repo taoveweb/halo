@@ -1,0 +1,13 @@
+# Flutter
+**/.dart_tool/
+**/.packages
+**/build/
+**/ios/Pods/
+**/android/.gradle/
+
+# Node
+backend/node_modules/
+
+# Editor
+.vscode/
+.idea/
