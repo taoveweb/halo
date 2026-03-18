@@ -5,6 +5,7 @@ import '../data/services/tweet_service.dart';
 import '../modules/compose/compose_controller.dart';
 import '../modules/home/home_controller.dart';
 import '../modules/profile/profile_controller.dart';
+import '../modules/social/social_controller.dart';
 import '../modules/tweet_detail/tweet_detail_controller.dart';
 
 class InitialBinding extends Bindings {
@@ -16,5 +17,6 @@ class InitialBinding extends Bindings {
     Get.lazyPut(() => ComposeController(Get.find()), fenix: true);
     Get.lazyPut(() => TweetDetailController(Get.find()), fenix: true);
     Get.lazyPut(ProfileController.new, fenix: true);
+    Get.lazyPut(SocialController.new, fenix: true);
   }
 }

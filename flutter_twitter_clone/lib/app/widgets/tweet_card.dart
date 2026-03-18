@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../data/models/tweet_model.dart';
 
-class TweetCard extends StatelessWidget {
+class TweetCard extends StatefulWidget {
   const TweetCard({
     super.key,
     required this.tweet,
@@ -14,9 +14,27 @@ class TweetCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
+  State<TweetCard> createState() => _TweetCardState();
+}
+
+class _TweetCardState extends State<TweetCard> {
+  late int likes;
+  late int retweets;
+  bool liked = false;
+  bool retweeted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    likes = widget.tweet.likes;
+    retweets = widget.tweet.retweets;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final tweet = widget.tweet;
     return InkWell(
-      onTap: onTap,
+      onTap: widget.onTap,
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: const BoxDecoration(
@@ -63,8 +81,28 @@ class TweetCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       _StatItem(icon: Icons.chat_bubble_outline, value: tweet.comments),
-                      _StatItem(icon: Icons.repeat, value: tweet.retweets),
-                      _StatItem(icon: Icons.favorite_border, value: tweet.likes),
+                      _StatItem(
+                        icon: retweeted ? Icons.repeat_on : Icons.repeat,
+                        value: retweets,
+                        color: retweeted ? const Color(0xFF00BA7C) : null,
+                        onTap: () {
+                          setState(() {
+                            retweeted = !retweeted;
+                            retweets += retweeted ? 1 : -1;
+                          });
+                        },
+                      ),
+                      _StatItem(
+                        icon: liked ? Icons.favorite : Icons.favorite_border,
+                        value: likes,
+                        color: liked ? const Color(0xFFF91880) : null,
+                        onTap: () {
+                          setState(() {
+                            liked = !liked;
+                            likes += liked ? 1 : -1;
+                          });
+                        },
+                      ),
                       const Icon(Icons.share_outlined, color: Color(0xFF71767B), size: 18),
                     ],
                   ),
@@ -79,19 +117,34 @@ class TweetCard extends StatelessWidget {
 }
 
 class _StatItem extends StatelessWidget {
-  const _StatItem({required this.icon, required this.value});
+  const _StatItem({
+    required this.icon,
+    required this.value,
+    this.color,
+    this.onTap,
+  });
 
   final IconData icon;
   final int value;
+  final Color? color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, color: const Color(0xFF71767B), size: 18),
-        const SizedBox(width: 4),
-        Text('$value', style: const TextStyle(color: Color(0xFF71767B))),
-      ],
+    final itemColor = color ?? const Color(0xFF71767B);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+        child: Row(
+          children: [
+            Icon(icon, color: itemColor, size: 18),
+            const SizedBox(width: 4),
+            Text('$value', style: TextStyle(color: itemColor)),
+          ],
+        ),
+      ),
     );
   }
 }
