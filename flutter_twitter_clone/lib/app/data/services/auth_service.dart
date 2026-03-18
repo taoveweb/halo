@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../models/auth_user_model.dart';
 import '../providers/auth_provider.dart';
 
@@ -72,5 +74,13 @@ class AuthService {
 
   Future<void> logout(String token) {
     return _provider.logout(token);
+  }
+
+  Future<String> uploadAvatar({
+    required String token,
+    required Uint8List bytes,
+    String mimeType = 'image/jpeg',
+  }) {
+    return _provider.uploadAvatar(token: token, bytes: bytes, mimeType: mimeType);
   }
 }

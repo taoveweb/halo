@@ -78,6 +78,7 @@ class ProfileController extends GetxController {
     final nextHandle = handleController.text.trim();
     final nextEmail = emailController.text.trim().toLowerCase();
     final nextAvatar = avatarController.text.trim();
+    final pickedAvatarBytes = localAvatarBytes.value;
     final currentPassword = currentPasswordController.text.trim();
     final newPassword = newPasswordController.text.trim();
 
@@ -98,18 +99,27 @@ class ProfileController extends GetxController {
 
     try {
       isSaving.value = true;
+      String? avatarToSave = nextAvatar.isNotEmpty ? nextAvatar : null;
+      bool clearAvatar = nextAvatar.isEmpty;
+
+      if (pickedAvatarBytes != null) {
+        avatarToSave = await _authController.uploadAvatar(pickedAvatarBytes);
+        clearAvatar = false;
+      }
+
       await _authController.updateProfile(
         name: name,
         handle: nextHandle,
         email: nextEmail,
-        avatarUrl: localAvatarBytes.value == null && nextAvatar.isNotEmpty ? nextAvatar : null,
-        clearAvatar: localAvatarBytes.value == null && nextAvatar.isEmpty,
+        avatarUrl: avatarToSave,
+        clearAvatar: clearAvatar,
         currentPassword: newPassword.isNotEmpty ? currentPassword : null,
         newPassword: newPassword.isNotEmpty ? newPassword : null,
       );
 
       currentPasswordController.clear();
       newPasswordController.clear();
+      localAvatarBytes.value = null;
       _syncFromAuth();
       Get.back<void>();
       Get.snackbar('成功', '个人资料已更新');

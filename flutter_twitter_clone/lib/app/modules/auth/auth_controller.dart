@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -174,6 +175,15 @@ class AuthController extends GetxController {
       newPassword: newPassword,
     );
     await _saveSession(sessionToken: currentToken, user: updatedUser);
+  }
+
+  Future<String> uploadAvatar(Uint8List bytes, {String mimeType = 'image/jpeg'}) async {
+    final currentToken = token.value;
+    if (currentToken == null || currentToken.isEmpty) {
+      throw Exception('当前未登录');
+    }
+
+    return _authService.uploadAvatar(token: currentToken, bytes: bytes, mimeType: mimeType);
   }
 
   @override

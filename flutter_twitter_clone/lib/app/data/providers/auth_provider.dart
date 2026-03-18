@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -101,6 +102,35 @@ class AuthProvider {
     }
 
     return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<String> uploadAvatar({
+    required String token,
+    required Uint8List bytes,
+    String mimeType = 'image/jpeg',
+  }) async {
+    final base64Image = base64Encode(bytes);
+    final response = await _client.post(
+      Uri.parse('${ApiConstants.baseUrl}/auth/avatar'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'imageBase64': 'data:$mimeType;base64,$base64Image',
+      }),
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception('上传头像失败: ${response.body}');
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final avatarUrl = data['avatarUrl'] as String?;
+    if (avatarUrl == null || avatarUrl.isEmpty) {
+      throw Exception('上传头像失败: 服务端未返回头像地址');
+    }
+    return avatarUrl;
   }
 
   Future<void> logout(String token) async {

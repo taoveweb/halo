@@ -1,7 +1,14 @@
 import { randomBytes } from 'node:crypto';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { pool } from '../db/mysql.js';
 import { hashPassword, verifyPassword } from '../utils/password.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadDir = path.join(__dirname, '../../uploads');
 
 function mapUser(row) {
   return {
@@ -108,6 +115,54 @@ export async function login(req, res, next) {
 
 export async function me(req, res) {
   return res.status(200).json(mapUser(req.authUser));
+}
+
+export async function uploadAvatar(req, res, next) {
+  try {
+    const imageBase64 = req.body.imageBase64?.trim();
+    if (!imageBase64) {
+      return res.status(400).json({ message: 'imageBase64 is required' });
+    }
+
+    const dataUrlMatch = imageBase64.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+    if (!dataUrlMatch) {
+      return res.status(400).json({ message: 'invalid imageBase64 format' });
+    }
+
+    const mimeType = dataUrlMatch[1].toLowerCase();
+    const base64Data = dataUrlMatch[2];
+    const extensionMap = {
+      'image/jpeg': 'jpg',
+      'image/jpg': 'jpg',
+      'image/png': 'png',
+      'image/webp': 'webp',
+      'image/gif': 'gif'
+    };
+    const ext = extensionMap[mimeType];
+    if (!ext) {
+      return res.status(400).json({ message: 'unsupported image type' });
+    }
+
+    const buffer = Buffer.from(base64Data, 'base64');
+    if (!buffer.length) {
+      return res.status(400).json({ message: 'invalid image payload' });
+    }
+
+    const maxBytes = 5 * 1024 * 1024;
+    if (buffer.length > maxBytes) {
+      return res.status(400).json({ message: 'image size exceeds 5MB limit' });
+    }
+
+    await fs.mkdir(uploadDir, { recursive: true });
+    const filename = `avatar-${Date.now()}-${randomBytes(6).toString('hex')}.${ext}`;
+    await fs.writeFile(path.join(uploadDir, filename), buffer);
+
+    const host = `${req.protocol}://${req.get('host')}`;
+    const avatarUrl = `${host}/uploads/${filename}`;
+    return res.status(201).json({ avatarUrl });
+  } catch (error) {
+    return next(error);
+  }
 }
 
 export async function updateProfile(req, res, next) {

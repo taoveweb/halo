@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import { login, logout, me, register, updateProfile } from '../controllers/authController.js';
+import { login, logout, me, register, updateProfile, uploadAvatar } from '../controllers/authController.js';
 import {
   getCommentsByTweetId,
   getTweetById,
@@ -16,6 +16,7 @@ const router = Router();
 router.post('/auth/register', register);
 router.post('/auth/login', login);
 router.get('/auth/me', requireAuth, me);
+router.post('/auth/avatar', requireAuth, uploadAvatar);
 router.patch('/auth/profile', requireAuth, updateProfile);
 router.post('/auth/logout', requireAuth, logout);
 
