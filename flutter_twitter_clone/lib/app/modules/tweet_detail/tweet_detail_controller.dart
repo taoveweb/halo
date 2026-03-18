@@ -15,6 +15,7 @@ class TweetDetailController extends GetxController {
   final TextEditingController commentInputController = TextEditingController();
   final RxBool isLoading = false.obs;
   final RxBool isPosting = false.obs;
+  final RxBool hasNewComment = false.obs;
   final RxString error = ''.obs;
 
   @override
@@ -55,6 +56,7 @@ class TweetDetailController extends GetxController {
       final created = await _tweetService.createComment(tweetId: current.id, content: content);
       comments.add(created);
       commentInputController.clear();
+      hasNewComment.value = true;
       tweet.value = TweetModel(
         id: current.id,
         author: current.author,

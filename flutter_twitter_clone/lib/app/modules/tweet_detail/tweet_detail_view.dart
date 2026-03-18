@@ -11,9 +11,20 @@ class TweetDetailView extends GetView<TweetDetailController> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('动态详情')),
-      body: Obx(() {
+    return WillPopScope(
+      onWillPop: () async {
+        Get.back(result: controller.hasNewComment.value);
+        return false;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('动态详情'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Get.back(result: controller.hasNewComment.value),
+          ),
+        ),
+        body: Obx(() {
         final tweet = controller.tweet.value;
         if (tweet == null) {
           return const Center(child: Text('暂无内容'));
@@ -100,6 +111,7 @@ class TweetDetailView extends GetView<TweetDetailController> {
           ],
         );
       }),
+      ),
     );
   }
 }
