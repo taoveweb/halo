@@ -48,7 +48,7 @@ export async function getTweetById(req, res, next) {
 
 export async function postTweet(req, res, next) {
   try {
-    const { content, author, handle } = req.body;
+    const { content } = req.body;
     if (!content || !content.trim()) {
       return res.status(400).json({ message: 'content is required' });
     }
@@ -58,8 +58,8 @@ export async function postTweet(req, res, next) {
       return res.status(400).json({ message: 'content must be <= 280 chars' });
     }
 
-    const normalizedAuthor = author?.trim() || 'You';
-    const normalizedHandle = handle?.trim() || '@you';
+    const normalizedAuthor = req.authUser.name;
+    const normalizedHandle = req.authUser.handle;
 
     const [result] = await pool.query(
       `INSERT INTO tweets (author, handle, content, likes, comments, retweets)
@@ -93,7 +93,7 @@ export async function getCommentsByTweetId(req, res, next) {
 
 export async function postComment(req, res, next) {
   try {
-    const { content, author, handle } = req.body;
+    const { content } = req.body;
     if (!content || !content.trim()) {
       return res.status(400).json({ message: 'content is required' });
     }
@@ -108,8 +108,8 @@ export async function postComment(req, res, next) {
       return res.status(404).json({ message: 'Tweet not found' });
     }
 
-    const normalizedAuthor = author?.trim() || 'You';
-    const normalizedHandle = handle?.trim() || '@you';
+    const normalizedAuthor = req.authUser.name;
+    const normalizedHandle = req.authUser.handle;
 
     const [result] = await pool.query(
       `INSERT INTO comments (tweet_id, author, handle, content)
