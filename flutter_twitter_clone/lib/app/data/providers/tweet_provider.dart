@@ -111,4 +111,31 @@ class TweetProvider {
 
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
+
+  Future<List<dynamic>> fetchCommunities() async {
+    final response = await _client.get(Uri.parse('${ApiConstants.baseUrl}/communities'));
+
+    if (response.statusCode != 200) {
+      throw Exception('加载社群失败: ${response.body}');
+    }
+
+    return jsonDecode(response.body) as List<dynamic>;
+  }
+
+  Future<Map<String, dynamic>> updateCommunityJoin({
+    required String communityId,
+    required bool active,
+  }) async {
+    final response = await _client.post(
+      Uri.parse('${ApiConstants.baseUrl}/communities/$communityId/join'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'active': active}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('更新社群状态失败: ${response.body}');
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
 }

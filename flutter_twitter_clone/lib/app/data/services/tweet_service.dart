@@ -1,4 +1,5 @@
 import '../models/comment_model.dart';
+import '../models/community_model.dart';
 import '../models/topic_model.dart';
 import '../models/tweet_model.dart';
 import '../providers/tweet_provider.dart';
@@ -51,5 +52,18 @@ class TweetService {
   Future<TopicModel> updateTopicFollow({required String topicId, required bool active}) async {
     final data = await _provider.updateTopicFollow(topicId: topicId, active: active);
     return TopicModel.fromJson(data);
+  }
+
+  Future<List<CommunityModel>> fetchCommunities() async {
+    final data = await _provider.fetchCommunities();
+    return data.map((item) => CommunityModel.fromJson(item as Map<String, dynamic>)).toList();
+  }
+
+  Future<CommunityModel> updateCommunityJoin({
+    required String communityId,
+    required bool active,
+  }) async {
+    final data = await _provider.updateCommunityJoin(communityId: communityId, active: active);
+    return CommunityModel.fromJson(data);
   }
 }
