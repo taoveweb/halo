@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:get/get.dart';
 
+import '../../data/models/community_model.dart';
 import '../../data/models/topic_model.dart';
 import '../../data/services/tweet_service.dart';
 
@@ -37,22 +38,6 @@ class ChatItem {
   bool pinned;
 }
 
-class CommunityItem {
-  CommunityItem({
-    required this.id,
-    required this.name,
-    required this.members,
-    required this.tag,
-    this.joined = false,
-  });
-
-  final String id;
-  final String name;
-  int members;
-  final String tag;
-  bool joined;
-}
-
 class SocialController extends GetxController {
   SocialController(this._tweetService);
 
@@ -79,13 +64,10 @@ class SocialController extends GetxController {
     ChatItem(id: 'c5', name: 'design_lily', message: '我更新了深色主题规范。', time: '周一'),
   ].obs;
 
-  final RxList<CommunityItem> communities = <CommunityItem>[
-    CommunityItem(id: 'g1', name: 'Flutter 中文社区', members: 12400, tag: '移动开发'),
-    CommunityItem(id: 'g2', name: '前端工程师联盟', members: 9100, tag: 'Web'),
-    CommunityItem(id: 'g3', name: '独立开发者日记', members: 7500, tag: '创业'),
-    CommunityItem(id: 'g4', name: '产品增长实验室', members: 5300, tag: '增长'),
-    CommunityItem(id: 'g5', name: '设计系统研究所', members: 4600, tag: '设计'),
-  ].obs;
+  final RxList<CommunityModel> communities = <CommunityModel>[].obs;
+  final RxBool communityLoading = false.obs;
+  final RxnString communityError = RxnString();
+  final RxSet<String> communityUpdating = <String>{}.obs;
 
   final RxString searchQuery = ''.obs;
   final RxInt selectedNotificationFilter = 0.obs;
@@ -95,6 +77,7 @@ class SocialController extends GetxController {
   void onInit() {
     super.onInit();
     loadTopics();
+    loadCommunities();
   }
 
   Future<void> loadTopics() async {
@@ -120,7 +103,20 @@ class SocialController extends GetxController {
   }
 
   Future<void> refreshAll() async {
-    await loadTopics();
+    await Future.wait([loadTopics(), loadCommunities()]);
+  }
+
+  Future<void> loadCommunities() async {
+    try {
+      communityLoading.value = true;
+      communityError.value = null;
+      final items = await _tweetService.fetchCommunities();
+      communities.assignAll(items);
+    } catch (error) {
+      communityError.value = error.toString();
+    } finally {
+      communityLoading.value = false;
+    }
   }
 
   void setSearchQuery(String value) {
@@ -177,10 +173,24 @@ class SocialController extends GetxController {
     });
   }
 
-  void joinCommunity(CommunityItem item) {
-    item.joined = !item.joined;
-    item.members += item.joined ? 1 : -1;
-    communities.refresh();
+  Future<void> joinCommunity(CommunityModel item) async {
+    if (communityUpdating.contains(item.id)) {
+      return;
+    }
+
+    try {
+      communityUpdating.add(item.id);
+      final updated = await _tweetService.updateCommunityJoin(
+        communityId: item.id,
+        active: !item.joined,
+      );
+      final index = communities.indexWhere((community) => community.id == item.id);
+      if (index != -1) {
+        communities[index] = updated;
+      }
+    } finally {
+      communityUpdating.remove(item.id);
+    }
   }
 
   @override

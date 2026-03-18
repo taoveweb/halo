@@ -86,3 +86,22 @@ CREATE TABLE IF NOT EXISTS user_following (
   PRIMARY KEY (id),
   UNIQUE KEY uk_user_following (user_handle, target_handle)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS communities (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(120) NOT NULL,
+  members INT NOT NULL DEFAULT 0,
+  tag VARCHAR(80) NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_communities_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS user_community_joins (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_handle VARCHAR(80) NOT NULL,
+  community_id BIGINT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_user_community (user_handle, community_id),
+  CONSTRAINT fk_user_community_community FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

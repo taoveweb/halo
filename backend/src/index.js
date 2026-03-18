@@ -6,6 +6,7 @@ import morgan from 'morgan';
 
 import { initDb } from './db/initDb.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
+import communityRoutes from './routes/communityRoutes.js';
 import tweetRoutes from './routes/tweetRoutes.js';
 import topicRoutes from './routes/topicRoutes.js';
 
@@ -22,6 +23,7 @@ app.get('/health', (_req, res) => {
 
 app.use('/api', tweetRoutes);
 app.use('/api', topicRoutes);
+app.use('/api', communityRoutes);
 app.use(notFound);
 app.use(errorHandler);
 

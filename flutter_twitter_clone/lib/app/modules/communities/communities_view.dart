@@ -29,12 +29,27 @@ class CommunitiesView extends GetView<SocialController> {
       ),
       bottomNavigationBar: const AppBottomNav(currentIndex: 2),
       body: Obx(() {
+        if (controller.communityLoading.value && controller.communities.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (controller.communityError.value != null && controller.communities.isEmpty) {
+          return Center(
+            child: Text(
+              controller.communityError.value!,
+              style: const TextStyle(color: Colors.redAccent),
+              textAlign: TextAlign.center,
+            ),
+          );
+        }
+
         return RefreshIndicator(
           onRefresh: controller.refreshAll,
           child: ListView.builder(
             itemCount: controller.communities.length,
             itemBuilder: (context, index) {
               final item = controller.communities[index];
+              final isUpdating = controller.communityUpdating.contains(item.id);
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 color: const Color(0xFF16181C),
@@ -43,8 +58,8 @@ class CommunitiesView extends GetView<SocialController> {
                   title: Text(item.name),
                   subtitle: Text('${_formatMembers(item.members)} 成员 · ${item.tag}'),
                   trailing: OutlinedButton(
-                    onPressed: () => controller.joinCommunity(item),
-                    child: Text(item.joined ? '已加入' : '加入'),
+                    onPressed: isUpdating ? null : () => controller.joinCommunity(item),
+                    child: Text(isUpdating ? '处理中...' : (item.joined ? '已加入' : '加入')),
                   ),
                 ),
               );

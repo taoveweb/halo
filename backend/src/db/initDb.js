@@ -11,6 +11,14 @@ const seedTopics = [
   { title: '#NodeJS', posts: 3887 }
 ];
 
+const seedCommunities = [
+  { name: 'Flutter 中文社区', members: 12400, tag: '移动开发' },
+  { name: '前端工程师联盟', members: 9100, tag: 'Web' },
+  { name: '独立开发者日记', members: 7500, tag: '创业' },
+  { name: '产品增长实验室', members: 5300, tag: '增长' },
+  { name: '设计系统研究所', members: 4600, tag: '设计' }
+];
+
 const seedFollowing = ['@halo_dev', '@jane_ui', '@dev_tom', '@flutter_cn'];
 
 export async function initDb() {
@@ -125,6 +133,29 @@ export async function initDb() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS communities (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      name VARCHAR(120) NOT NULL,
+      members INT NOT NULL DEFAULT 0,
+      tag VARCHAR(80) NOT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_communities_name (name)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_community_joins (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      user_handle VARCHAR(80) NOT NULL,
+      community_id BIGINT UNSIGNED NOT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_user_community (user_handle, community_id),
+      CONSTRAINT fk_user_community_community FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
+
   const [existingTweets] = await pool.query('SELECT COUNT(*) AS count FROM tweets');
   if (existingTweets[0].count === 0) {
     for (const template of seedTemplates) {
@@ -161,6 +192,15 @@ export async function initDb() {
        VALUES (?, ?)
        ON DUPLICATE KEY UPDATE posts = VALUES(posts)`,
       [topic.title, topic.posts]
+    );
+  }
+
+  for (const community of seedCommunities) {
+    await pool.query(
+      `INSERT INTO communities (name, members, tag)
+       VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE members = VALUES(members), tag = VALUES(tag)`,
+      [community.name, community.members, community.tag]
     );
   }
 
