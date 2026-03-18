@@ -1,18 +1,7 @@
-import 'dart:async';
-
 import 'package:get/get.dart';
 
-class TopicModel {
-  TopicModel({
-    required this.title,
-    required this.posts,
-    this.following = false,
-  });
-
-  final String title;
-  int posts;
-  bool following;
-}
+import '../../data/models/topic_model.dart';
+import '../../data/services/tweet_service.dart';
 
 class NotificationItem {
   NotificationItem({
@@ -63,14 +52,12 @@ class CommunityItem {
 }
 
 class SocialController extends GetxController {
-  final RxList<TopicModel> topics = <TopicModel>[
-    TopicModel(title: '#Flutter', posts: 12000),
-    TopicModel(title: '#GetX', posts: 4362),
-    TopicModel(title: '#HaloSocial', posts: 2993),
-    TopicModel(title: '#AIProductivity', posts: 8501),
-    TopicModel(title: '#OpenSource', posts: 6218),
-    TopicModel(title: '#NodeJS', posts: 3887),
-  ].obs;
+  SocialController(this._tweetService);
+
+  final TweetService _tweetService;
+
+  final RxList<TopicModel> topics = <TopicModel>[].obs;
+  final RxBool topicLoading = false.obs;
 
   final RxList<NotificationItem> notifications = <NotificationItem>[
     NotificationItem(id: 'n1', title: 'Halo Team 赞了你的动态', minutesAgo: 2),
@@ -100,19 +87,23 @@ class SocialController extends GetxController {
   final RxString searchQuery = ''.obs;
   final RxInt selectedNotificationFilter = 0.obs;
 
-  Timer? _timer;
-
   @override
   void onInit() {
     super.onInit();
-    _timer = Timer.periodic(const Duration(seconds: 15), (_) => _realtimeTick());
+    loadTopics();
   }
 
-  List<TopicModel> get filteredTopics {
-    final query = searchQuery.value.trim().toLowerCase();
-    if (query.isEmpty) return topics;
-    return topics.where((item) => item.title.toLowerCase().contains(query)).toList();
+  Future<void> loadTopics() async {
+    try {
+      topicLoading.value = true;
+      final items = await _tweetService.fetchTopics(query: searchQuery.value.trim());
+      topics.assignAll(items);
+    } finally {
+      topicLoading.value = false;
+    }
   }
+
+  List<TopicModel> get filteredTopics => topics;
 
   List<NotificationItem> get filteredNotifications {
     if (selectedNotificationFilter.value == 1) {
@@ -122,17 +113,20 @@ class SocialController extends GetxController {
   }
 
   Future<void> refreshAll() async {
-    await Future<void>.delayed(const Duration(milliseconds: 350));
-    _realtimeTick();
+    await loadTopics();
   }
 
   void setSearchQuery(String value) {
     searchQuery.value = value;
+    loadTopics();
   }
 
-  void toggleTopicFollow(TopicModel topic) {
-    topic.following = !topic.following;
-    topics.refresh();
+  Future<void> toggleTopicFollow(TopicModel topic) async {
+    final updated = await _tweetService.updateTopicFollow(topicId: topic.id, active: !topic.following);
+    final index = topics.indexWhere((item) => item.id == topic.id);
+    if (index != -1) {
+      topics[index] = updated;
+    }
   }
 
   void setNotificationFilter(int index) {
@@ -169,34 +163,5 @@ class SocialController extends GetxController {
     item.joined = !item.joined;
     item.members += item.joined ? 1 : -1;
     communities.refresh();
-  }
-
-  void _realtimeTick() {
-    for (final topic in topics) {
-      topic.posts += 1;
-    }
-    for (final n in notifications) {
-      n.minutesAgo += 1;
-    }
-
-    if (notifications.isNotEmpty) {
-      notifications.first.read = false;
-    }
-
-    if (chats.isNotEmpty) {
-      chats.first.unreadCount += 1;
-      chats.first.message = '收到一条新消息，点击查看';
-      chats.first.time = '刚刚';
-    }
-
-    topics.refresh();
-    notifications.refresh();
-    chats.refresh();
-  }
-
-  @override
-  void onClose() {
-    _timer?.cancel();
-    super.onClose();
   }
 }

@@ -19,6 +19,6 @@ class InitialBinding extends Bindings {
     Get.lazyPut(() => TweetDetailController(Get.find()), fenix: true);
     Get.lazyPut(AuthController.new, fenix: true);
     Get.lazyPut(() => ProfileController(Get.find()), fenix: true);
-    Get.lazyPut(SocialController.new, fenix: true);
+    Get.lazyPut(() => SocialController(Get.find()), fenix: true);
   }
 }
