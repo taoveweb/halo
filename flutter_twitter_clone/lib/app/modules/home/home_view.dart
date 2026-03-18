@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../routes/app_routes.dart';
+import '../../widgets/app_bottom_nav.dart';
 import '../../widgets/tweet_card.dart';
 import 'home_controller.dart';
 
@@ -13,8 +14,12 @@ class HomeView extends GetView<HomeController> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('主页'),
-        actions: const [
-          Padding(
+        actions: [
+          IconButton(
+            onPressed: () => Get.toNamed(AppRoutes.profile),
+            icon: const Icon(Icons.person_outline),
+          ),
+          const Padding(
             padding: EdgeInsets.only(right: 14),
             child: Icon(Icons.auto_awesome_outlined),
           ),
@@ -30,25 +35,7 @@ class HomeView extends GetView<HomeController> {
         },
         child: const Icon(Icons.add),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.black,
-        selectedItemColor: Colors.white,
-        unselectedItemColor: const Color(0xFF71767B),
-        type: BottomNavigationBarType.fixed,
-        currentIndex: 0,
-        onTap: (index) {
-          if (index == 3) {
-            Get.toNamed(AppRoutes.profile);
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.groups_outlined), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.notifications_none), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.mail_outline), label: ''),
-        ],
-      ),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 0),
       body: Obx(() {
         if (controller.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
