@@ -6,32 +6,39 @@ npm install
 npm run dev
 ```
 
-> 应用启动时会自动创建 `tweets/comments` 表，并在空库时自动初始化种子数据。
+> 应用启动时会自动创建 `users/auth_tokens/tweets/comments` 表，并在空库时自动初始化种子数据。
 > 首次运行 `npm run dev` / `npm start` 时，如果 `.env` 不存在，后端会自动基于 `.env.example` 生成。
 
+## 演示账号
+- 邮箱：`halo@example.com`
+- 密码：`123456`
 
 ## API
 - `GET /health`
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/auth/me`（需要 Bearer Token）
+- `POST /api/auth/logout`（需要 Bearer Token）
 - `GET /api/tweets`
 - `GET /api/tweets/:id`
-- `POST /api/tweets`
+- `POST /api/tweets`（需要 Bearer Token）
 - `GET /api/tweets/:id/comments`
-- `POST /api/tweets/:id/comments`
+- `POST /api/tweets/:id/comments`（需要 Bearer Token）
 
-### `POST /api/tweets` body 示例
+### `POST /api/auth/register` body 示例
 ```json
 {
-  "content": "Hello from Flutter!",
-  "author": "Your Name",
-  "handle": "@your_handle"
+  "name": "Halo User",
+  "handle": "@halo_user",
+  "email": "halo@example.com",
+  "password": "123456"
 }
 ```
 
-### `POST /api/tweets/:id/comments` body 示例
+### `POST /api/auth/login` body 示例
 ```json
 {
-  "content": "这条动态说得好！",
-  "author": "评论者",
-  "handle": "@commenter"
+  "email": "halo@example.com",
+  "password": "123456"
 }
 ```

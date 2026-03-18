@@ -16,6 +16,10 @@ class AuthView extends GetView<AuthController> {
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Obx(() {
+              if (controller.isBootstrapping.value) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
               final isLogin = controller.isLoginMode.value;
               return ListView(
                 shrinkWrap: true,
@@ -69,13 +73,6 @@ class AuthView extends GetView<AuthController> {
                     onPressed: controller.toggleMode,
                     child: Text(isLogin ? '没有账号？去注册' : '已有账号？去登录'),
                   ),
-                  if (isLogin) ...[
-                    const SizedBox(height: 8),
-                    const Text(
-                      '演示账号：halo@example.com / 123456',
-                      style: TextStyle(color: Color(0xFF71767B), fontSize: 12),
-                    ),
-                  ],
                 ],
               );
             }),

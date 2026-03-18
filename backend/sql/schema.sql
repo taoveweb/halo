@@ -1,6 +1,29 @@
 CREATE DATABASE IF NOT EXISTS halo_social CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE halo_social;
 
+CREATE TABLE IF NOT EXISTS users (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  email VARCHAR(120) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  name VARCHAR(80) NOT NULL,
+  handle VARCHAR(80) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_users_email (email),
+  UNIQUE KEY uk_users_handle (handle)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS auth_tokens (
+  token CHAR(64) NOT NULL,
+  user_id BIGINT UNSIGNED NOT NULL,
+  expires_at DATETIME NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (token),
+  KEY idx_auth_tokens_user (user_id),
+  KEY idx_auth_tokens_expires (expires_at),
+  CONSTRAINT fk_auth_tokens_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS tweets (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   author VARCHAR(80) NOT NULL,
