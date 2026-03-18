@@ -3,18 +3,10 @@ import 'package:get/get.dart';
 
 import '../../routes/app_routes.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../social/social_controller.dart';
 
-class SearchView extends StatelessWidget {
+class SearchView extends GetView<SocialController> {
   const SearchView({super.key});
-
-  static const _trendingTopics = <Map<String, String>>[
-    {'title': '#Flutter', 'subtitle': '1.2万 条动态'},
-    {'title': '#GetX', 'subtitle': '4,362 条动态'},
-    {'title': '#HaloSocial', 'subtitle': '2,993 条动态'},
-    {'title': '#AIProductivity', 'subtitle': '8,501 条动态'},
-    {'title': '#OpenSource', 'subtitle': '6,218 条动态'},
-    {'title': '#NodeJS', 'subtitle': '3,887 条动态'},
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -29,17 +21,53 @@ class SearchView extends StatelessWidget {
         ],
       ),
       bottomNavigationBar: const AppBottomNav(currentIndex: 1),
-      body: ListView.separated(
-        itemCount: _trendingTopics.length,
-        separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFF2F3336)),
-        itemBuilder: (context, index) {
-          final item = _trendingTopics[index];
-          return ListTile(
-            title: Text(item['title']!, style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Text(item['subtitle']!, style: const TextStyle(color: Color(0xFF71767B))),
-            trailing: const Icon(Icons.more_horiz, color: Color(0xFF71767B)),
-          );
-        },
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+            child: TextField(
+              onChanged: controller.setSearchQuery,
+              decoration: InputDecoration(
+                hintText: '搜索话题或关键字',
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: const Color(0xFF16181C),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Obx(
+              () {
+                final topics = controller.filteredTopics;
+                return RefreshIndicator(
+                  onRefresh: controller.refreshAll,
+                  child: ListView.separated(
+                    itemCount: topics.length,
+                    separatorBuilder: (_, __) =>
+                        const Divider(height: 1, color: Color(0xFF2F3336)),
+                    itemBuilder: (context, index) {
+                      final item = topics[index];
+                      return ListTile(
+                        title: Text(item.title,
+                            style: const TextStyle(fontWeight: FontWeight.w600)),
+                        subtitle: Text('${item.posts} 条动态',
+                            style: const TextStyle(color: Color(0xFF71767B))),
+                        trailing: FilledButton.tonal(
+                          onPressed: () => controller.toggleTopicFollow(item),
+                          child: Text(item.following ? '已关注' : '关注'),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -3,17 +3,10 @@ import 'package:get/get.dart';
 
 import '../../routes/app_routes.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../social/social_controller.dart';
 
-class MessagesView extends StatelessWidget {
+class MessagesView extends GetView<SocialController> {
   const MessagesView({super.key});
-
-  static const _chats = <Map<String, String>>[
-    {'name': 'Jane Doe', 'message': '首页交互我已经提交 PR 啦。', 'time': '刚刚'},
-    {'name': 'Halo Team', 'message': '今晚 8 点上线新版本，记得回归测试。', 'time': '12:20'},
-    {'name': 'dev_tom', 'message': '可以把评论接口也接一下吗？', 'time': '昨天'},
-    {'name': 'product_amy', 'message': '下周加上推荐流页面如何？', 'time': '周二'},
-    {'name': 'design_lily', 'message': '我更新了深色主题规范。', 'time': '周一'},
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -28,21 +21,58 @@ class MessagesView extends StatelessWidget {
         ],
       ),
       bottomNavigationBar: const AppBottomNav(currentIndex: 4),
-      body: ListView.separated(
-        itemCount: _chats.length,
-        separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFF2F3336)),
-        itemBuilder: (context, index) {
-          final item = _chats[index];
-          return ListTile(
-            leading: CircleAvatar(child: Text(item['name']![0].toUpperCase())),
-            title: Text(item['name']!),
-            subtitle: Text(item['message']!, maxLines: 1, overflow: TextOverflow.ellipsis),
-            trailing: Text(item['time']!, style: const TextStyle(color: Color(0xFF71767B))),
-          );
-        },
-      ),
+      body: Obx(() {
+        return RefreshIndicator(
+          onRefresh: controller.refreshAll,
+          child: ListView.separated(
+            itemCount: controller.chats.length,
+            separatorBuilder: (_, __) =>
+                const Divider(height: 1, color: Color(0xFF2F3336)),
+            itemBuilder: (context, index) {
+              final item = controller.chats[index];
+              return ListTile(
+                onTap: () {
+                  controller.openChat(item);
+                  Get.snackbar('会话已打开', '你正在与 ${item.name} 聊天');
+                },
+                onLongPress: () => controller.togglePinChat(item),
+                leading: CircleAvatar(child: Text(item.name[0].toUpperCase())),
+                title: Row(
+                  children: [
+                    Expanded(child: Text(item.name)),
+                    if (item.pinned)
+                      const Icon(Icons.push_pin, size: 14, color: Color(0xFF1D9BF0)),
+                  ],
+                ),
+                subtitle: Text(item.message,
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                trailing: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(item.time,
+                        style: const TextStyle(color: Color(0xFF71767B), fontSize: 12)),
+                    if (item.unreadCount > 0)
+                      Container(
+                        margin: const EdgeInsets.only(top: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1D9BF0),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '${item.unreadCount}',
+                          style: const TextStyle(fontSize: 11, color: Colors.white),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      }),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () => Get.snackbar('新建私信', '请输入联系人后开始聊天'),
         child: const Icon(Icons.mail_outline),
       ),
     );
