@@ -88,6 +88,21 @@ export async function initDb() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS admin_audit_logs (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      operator VARCHAR(80) NOT NULL,
+      action VARCHAR(40) NOT NULL,
+      target_type VARCHAR(40) NOT NULL,
+      target_id VARCHAR(80) NULL,
+      detail VARCHAR(255) NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      KEY idx_admin_audit_logs_created_at (created_at),
+      KEY idx_admin_audit_logs_action (action)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
+
   await pool.query(
     `INSERT INTO users (email, password_hash, name, handle, avatar_url)
      VALUES (?, ?, ?, ?, ?)
