@@ -43,4 +43,16 @@ flutter run --dart-define=APP_ENV=prod --dart-define=API_URL=https://hotfix-api.
 
 ```bash
 NO_PROXY=localhost,127.0.0.1,::1 flutter run -d chrome
+
+# 生产环境构建
+flutter build web --release --dart-define=APP_ENV=prod
+
+# 测试环境构建  
+flutter build web --release --dart-define=APP_ENV=test
+
+# 开发环境构建（默认）
+flutter build web --release --dart-define=APP_ENV=dev
+
 ```
+
+

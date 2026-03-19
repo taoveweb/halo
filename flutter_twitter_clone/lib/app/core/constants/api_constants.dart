@@ -15,12 +15,12 @@ class ApiConstants {
 
   static const String _testBaseUrl = String.fromEnvironment(
     'API_URL_TEST',
-    defaultValue: 'http://172.20.10.2/api',
+    defaultValue: 'http://172.20.10.2:3000/api',
   );
 
   static const String _prodBaseUrl = String.fromEnvironment(
     'API_URL_PROD',
-    defaultValue: 'http://172.20.10.2/api',
+    defaultValue: 'http://172.20.10.2:3000/api',
   );
 
   /// 最终 API 地址：
