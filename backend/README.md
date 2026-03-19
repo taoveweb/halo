@@ -51,6 +51,15 @@ npm run dev
 - `GET /api/admin/dashboard`（需要 Bearer Token）
 - `GET /api/admin/tweets`（需要 Bearer Token）
 - `DELETE /api/admin/tweets/:id`（需要 Bearer Token）
+- `GET /api/admin/users`（需要 Bearer Token）
+- `GET /api/admin/comments`（需要 Bearer Token）
+- `DELETE /api/admin/comments/:id`（需要 Bearer Token）
+- `GET /api/admin/audit-logs`（需要 Bearer Token）
+
+### 后台增强点（本次新增）
+- 管理员登录失败限流：15 分钟窗口最多 5 次，超过后临时锁定。
+- 仪表盘新增当日增量数据（新增用户、推文、评论）。
+- 新增用户管理、评论管理、审计日志 API，便于做后台治理与追踪。
 
 ### 默认后台账号
 - 用户名：`admin`
