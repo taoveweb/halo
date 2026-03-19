@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../data/models/community_model.dart';
 import '../../data/models/topic_model.dart';
+import '../../data/models/tweet_model.dart';
 import '../../data/services/tweet_service.dart';
 
 class NotificationItem {
@@ -68,6 +69,9 @@ class SocialController extends GetxController {
   final RxBool communityLoading = false.obs;
   final RxnString communityError = RxnString();
   final RxSet<String> communityUpdating = <String>{}.obs;
+  final RxList<TweetModel> searchTweets = <TweetModel>[].obs;
+  final RxBool searchLoading = false.obs;
+  final RxnString searchError = RxnString();
 
   final RxString searchQuery = ''.obs;
   final RxInt selectedNotificationFilter = 0.obs;
@@ -76,8 +80,24 @@ class SocialController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    loadTopics();
+    loadSearchTweets();
     loadCommunities();
+  }
+
+  Future<void> loadSearchTweets() async {
+    try {
+      searchLoading.value = true;
+      searchError.value = null;
+      final items = await _tweetService.fetchTimeline(
+        feed: 'for_you',
+        query: searchQuery.value.trim(),
+      );
+      searchTweets.assignAll(items);
+    } catch (error) {
+      searchError.value = error.toString();
+    } finally {
+      searchLoading.value = false;
+    }
   }
 
   Future<void> loadTopics() async {
@@ -103,7 +123,7 @@ class SocialController extends GetxController {
   }
 
   Future<void> refreshAll() async {
-    await Future.wait([loadTopics(), loadCommunities()]);
+    await Future.wait([loadSearchTweets(), loadCommunities()]);
   }
 
   Future<void> loadCommunities() async {
@@ -122,7 +142,7 @@ class SocialController extends GetxController {
   void setSearchQuery(String value) {
     searchQuery.value = value;
     _searchDebounce?.cancel();
-    _searchDebounce = Timer(const Duration(milliseconds: 350), loadTopics);
+    _searchDebounce = Timer(const Duration(milliseconds: 350), loadSearchTweets);
   }
 
   void clearSearchQuery() {
@@ -132,7 +152,7 @@ class SocialController extends GetxController {
 
     searchQuery.value = '';
     _searchDebounce?.cancel();
-    loadTopics();
+    loadSearchTweets();
   }
 
   Future<void> toggleTopicFollow(TopicModel topic) async {

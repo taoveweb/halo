@@ -20,8 +20,12 @@ class TweetProvider {
     return headers;
   }
 
-  Future<List<dynamic>> fetchTimeline({required String feed}) async {
-    final uri = Uri.parse('${ApiConstants.baseUrl}/tweets?feed=$feed');
+  Future<List<dynamic>> fetchTimeline({required String feed, String? query}) async {
+    final queryParams = <String, String>{'feed': feed};
+    if (query != null && query.trim().isNotEmpty) {
+      queryParams['query'] = query.trim();
+    }
+    final uri = Uri.parse('${ApiConstants.baseUrl}/tweets').replace(queryParameters: queryParams);
     final response = await _client.get(uri);
 
     if (response.statusCode != 200) {
