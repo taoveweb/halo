@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../routes/app_routes.dart';
@@ -88,6 +89,17 @@ class HomeView extends GetView<HomeController> {
                       tweet: tweet,
                       onLike: () => controller.toggleLike(tweet),
                       onRetweet: () => controller.toggleRetweet(tweet),
+                      onComment: () async {
+                        final updated = await Get.toNamed(AppRoutes.tweetDetail, arguments: tweet);
+                        if (updated == true) {
+                          controller.loadTimeline();
+                        }
+                      },
+                      onShare: () async {
+                        final text = '${tweet.author} ${tweet.handle}\n${tweet.content}';
+                        await Clipboard.setData(ClipboardData(text: text));
+                        Get.snackbar('已复制', '动态内容已复制到剪贴板', snackPosition: SnackPosition.BOTTOM);
+                      },
                       onTap: () async {
                         final updated = await Get.toNamed(AppRoutes.tweetDetail, arguments: tweet);
                         if (updated == true) {

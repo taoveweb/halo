@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../data/models/comment_model.dart';
@@ -17,6 +18,9 @@ class TweetDetailController extends GetxController {
   final RxBool isPosting = false.obs;
   final RxBool hasNewComment = false.obs;
   final RxString error = ''.obs;
+  final RxInt commentLength = 0.obs;
+
+  bool get canSendComment => !isPosting.value && commentLength.value > 0;
 
   @override
   void onInit() {
@@ -26,6 +30,11 @@ class TweetDetailController extends GetxController {
       tweet.value = args;
       loadComments();
     }
+    commentInputController.addListener(_handleCommentInputChanged);
+  }
+
+  void _handleCommentInputChanged() {
+    commentLength.value = commentInputController.text.trim().length;
   }
 
   Future<void> loadComments() async {
@@ -42,6 +51,33 @@ class TweetDetailController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  Future<void> toggleLike() async {
+    final current = tweet.value;
+    if (current == null) return;
+
+    final updated = await _tweetService.likeTweet(tweetId: current.id, active: !current.isLiked);
+    tweet.value = updated;
+    hasNewComment.value = true;
+  }
+
+  Future<void> toggleRetweet() async {
+    final current = tweet.value;
+    if (current == null) return;
+
+    final updated = await _tweetService.retweetTweet(tweetId: current.id, active: !current.isRetweeted);
+    tweet.value = updated;
+    hasNewComment.value = true;
+  }
+
+  Future<void> shareTweet() async {
+    final current = tweet.value;
+    if (current == null) return;
+
+    final text = '${current.author} ${current.handle}\n${current.content}';
+    await Clipboard.setData(ClipboardData(text: text));
+    Get.snackbar('已复制', '动态内容已复制到剪贴板', snackPosition: SnackPosition.BOTTOM);
   }
 
   Future<void> postComment() async {
@@ -67,7 +103,9 @@ class TweetDetailController extends GetxController {
 
   @override
   void onClose() {
-    commentInputController.dispose();
+    commentInputController
+      ..removeListener(_handleCommentInputChanged)
+      ..dispose();
     super.onClose();
   }
 }

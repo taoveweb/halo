@@ -8,14 +8,18 @@ class TweetCard extends StatelessWidget {
     super.key,
     required this.tweet,
     this.onTap,
+    this.onComment,
     this.onLike,
     this.onRetweet,
+    this.onShare,
   });
 
   final TweetModel tweet;
   final VoidCallback? onTap;
+  final VoidCallback? onComment;
   final VoidCallback? onLike;
   final VoidCallback? onRetweet;
+  final VoidCallback? onShare;
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +70,11 @@ class TweetCard extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _StatItem(icon: Icons.chat_bubble_outline, value: tweet.comments),
+                      _StatItem(
+                        icon: Icons.chat_bubble_outline,
+                        value: tweet.comments,
+                        onTap: onComment,
+                      ),
                       _StatItem(
                         icon: tweet.isRetweeted ? Icons.repeat_on : Icons.repeat,
                         value: tweet.retweets,
@@ -79,7 +87,7 @@ class TweetCard extends StatelessWidget {
                         color: tweet.isLiked ? const Color(0xFFF91880) : null,
                         onTap: onLike,
                       ),
-                      const Icon(Icons.share_outlined, color: Color(0xFF71767B), size: 18),
+                      _StatItem(icon: Icons.share_outlined, value: null, onTap: onShare),
                     ],
                   ),
                 ],
@@ -101,7 +109,7 @@ class _StatItem extends StatelessWidget {
   });
 
   final IconData icon;
-  final int value;
+  final int? value;
   final Color? color;
   final VoidCallback? onTap;
 
@@ -116,8 +124,10 @@ class _StatItem extends StatelessWidget {
         child: Row(
           children: [
             Icon(icon, color: itemColor, size: 18),
-            const SizedBox(width: 4),
-            Text('$value', style: TextStyle(color: itemColor)),
+            if (value != null) ...[
+              const SizedBox(width: 4),
+              Text('$value', style: TextStyle(color: itemColor)),
+            ],
           ],
         ),
       ),

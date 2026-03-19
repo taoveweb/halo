@@ -37,7 +37,12 @@ class TweetDetailView extends GetView<TweetDetailController> {
                 onRefresh: controller.loadComments,
                 child: ListView(
                   children: [
-                    TweetCard(tweet: tweet),
+                    TweetCard(
+                      tweet: tweet,
+                      onLike: controller.toggleLike,
+                      onRetweet: controller.toggleRetweet,
+                      onShare: controller.shareTweet,
+                    ),
                     const Padding(
                       padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
                       child: Text(
@@ -94,7 +99,7 @@ class TweetDetailView extends GetView<TweetDetailController> {
                     const SizedBox(width: 8),
                     Obx(() {
                       return FilledButton(
-                        onPressed: controller.isPosting.value ? null : controller.postComment,
+                        onPressed: controller.canSendComment ? controller.postComment : null,
                         child: controller.isPosting.value
                             ? const SizedBox(
                                 width: 16,
