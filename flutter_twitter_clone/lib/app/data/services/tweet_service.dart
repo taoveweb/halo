@@ -9,8 +9,8 @@ class TweetService {
 
   final TweetProvider _provider;
 
-  Future<List<TweetModel>> fetchTimeline({required String feed}) async {
-    final data = await _provider.fetchTimeline(feed: feed);
+  Future<List<TweetModel>> fetchTimeline({required String feed, String? query}) async {
+    final data = await _provider.fetchTimeline(feed: feed, query: query);
     return data
         .map((item) => TweetModel.fromJson(item as Map<String, dynamic>))
         .toList();

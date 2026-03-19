@@ -70,6 +70,10 @@ export async function getTweets(req, res, next) {
   try {
     const viewerHandle = req.query.viewerHandle?.trim() || DEFAULT_USER_HANDLE;
     const feed = req.query.feed === 'following' ? 'following' : 'for_you';
+    const query = req.query.query?.trim() || '';
+    const hasQuery = query.length > 0;
+    const queryCondition = hasQuery ? ' AND t.content LIKE ?' : '';
+    const queryParam = hasQuery ? [`%${query}%`] : [];
 
     const baseQuery = `
       SELECT
@@ -85,22 +89,26 @@ export async function getTweets(req, res, next) {
     if (feed === 'following') {
       const [rows] = await pool.query(
         `${baseQuery}
-         WHERE t.handle = ?
-            OR t.handle IN (
-               SELECT target_handle
-               FROM user_following
-               WHERE user_handle = ?
-            )
+         WHERE (
+           t.handle = ?
+           OR t.handle IN (
+             SELECT target_handle
+             FROM user_following
+             WHERE user_handle = ?
+           )
+         )
+         ${queryCondition}
          ORDER BY t.created_at DESC, t.id DESC`,
-        [viewerHandle, viewerHandle, viewerHandle]
+        [viewerHandle, viewerHandle, viewerHandle, ...queryParam]
       );
       return res.status(200).json(rows.map(mapTweet));
     }
 
     const [rows] = await pool.query(
       `${baseQuery}
+       ${hasQuery ? 'WHERE t.content LIKE ?' : ''}
        ORDER BY (t.likes * 2 + t.retweets * 3 + t.comments) DESC, t.created_at DESC, t.id DESC`,
-      [viewerHandle]
+      [viewerHandle, ...queryParam]
     );
     return res.status(200).json(rows.map(mapTweet));
   } catch (error) {

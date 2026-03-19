@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../routes/app_routes.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/tweet_card.dart';
 import '../social/social_controller.dart';
 
 class SearchView extends StatefulWidget {
@@ -54,10 +56,10 @@ class _SearchViewState extends State<SearchView> {
               () => TextField(
                 controller: _searchTextController,
                 onChanged: controller.setSearchQuery,
-                onSubmitted: (_) => controller.loadTopics(),
+                onSubmitted: (_) => controller.loadSearchTweets(),
                 textInputAction: TextInputAction.search,
                 decoration: InputDecoration(
-                  hintText: '搜索话题或关键字',
+                  hintText: '搜索推文内容',
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon: controller.searchQuery.value.isEmpty
                       ? null
@@ -82,11 +84,10 @@ class _SearchViewState extends State<SearchView> {
           Expanded(
             child: Obx(
               () {
-                final topics = controller.filteredTopics;
-                if (controller.topicLoading.value) {
+                if (controller.searchLoading.value) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                if (controller.topicError.value != null) {
+                if (controller.searchError.value != null) {
                   return Center(
                     child: Padding(
                       padding: const EdgeInsets.all(20),
@@ -98,7 +99,7 @@ class _SearchViewState extends State<SearchView> {
                           const Text('搜索失败，请检查网络后重试'),
                           const SizedBox(height: 12),
                           FilledButton(
-                            onPressed: controller.loadTopics,
+                            onPressed: controller.loadSearchTweets,
                             child: const Text('重试'),
                           ),
                         ],
@@ -106,12 +107,12 @@ class _SearchViewState extends State<SearchView> {
                     ),
                   );
                 }
-                if (topics.isEmpty) {
+                if (controller.searchTweets.isEmpty) {
                   return Center(
                     child: Text(
                       controller.searchQuery.value.trim().isEmpty
-                          ? '暂无推荐话题'
-                          : '没有找到相关话题，换个关键词试试',
+                          ? '输入关键词搜索推文内容'
+                          : '没有找到相关推文，换个关键词试试',
                       style: const TextStyle(color: Color(0xFF71767B)),
                     ),
                   );
@@ -119,21 +120,18 @@ class _SearchViewState extends State<SearchView> {
 
                 return RefreshIndicator(
                   onRefresh: controller.refreshAll,
-                  child: ListView.separated(
-                    itemCount: topics.length,
-                    separatorBuilder: (_, __) =>
-                        const Divider(height: 1, color: Color(0xFF2F3336)),
+                  child: ListView.builder(
+                    itemCount: controller.searchTweets.length,
                     itemBuilder: (context, index) {
-                      final item = topics[index];
-                      return ListTile(
-                        title: Text(item.title,
-                            style: const TextStyle(fontWeight: FontWeight.w600)),
-                        subtitle: Text('${item.posts} 条动态',
-                            style: const TextStyle(color: Color(0xFF71767B))),
-                        trailing: FilledButton.tonal(
-                          onPressed: () async => controller.toggleTopicFollow(item),
-                          child: Text(item.following ? '已关注' : '关注'),
-                        ),
+                      final tweet = controller.searchTweets[index];
+                      return TweetCard(
+                        tweet: tweet,
+                        onTap: () => Get.toNamed(AppRoutes.tweetDetail, arguments: tweet),
+                        onShare: () async {
+                          final text = '${tweet.author} ${tweet.handle}\n${tweet.content}';
+                          await Clipboard.setData(ClipboardData(text: text));
+                          Get.snackbar('已复制', '动态内容已复制到剪贴板', snackPosition: SnackPosition.BOTTOM);
+                        },
                       );
                     },
                   ),
