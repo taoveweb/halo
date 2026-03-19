@@ -54,6 +54,11 @@ class TweetService {
     return TopicModel.fromJson(data);
   }
 
+  Future<TopicModel> createTopic({required String title}) async {
+    final data = await _provider.createTopic(title: title);
+    return TopicModel.fromJson(data);
+  }
+
   Future<List<CommunityModel>> fetchCommunities() async {
     final data = await _provider.fetchCommunities();
     return data.map((item) => CommunityModel.fromJson(item as Map<String, dynamic>)).toList();

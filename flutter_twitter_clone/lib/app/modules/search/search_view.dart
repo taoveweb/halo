@@ -35,6 +35,11 @@ class _SearchViewState extends State<SearchView> {
         title: const Text('探索'),
         actions: [
           IconButton(
+            onPressed: () => _showCreateTopicDialog(context),
+            icon: const Icon(Icons.add_circle_outline),
+            tooltip: '新建话题',
+          ),
+          IconButton(
             onPressed: () => Get.toNamed(AppRoutes.profile),
             icon: const Icon(Icons.person_outline),
           ),
@@ -139,5 +144,52 @@ class _SearchViewState extends State<SearchView> {
         ],
       ),
     );
+  }
+
+  Future<void> _showCreateTopicDialog(BuildContext context) async {
+    final textController = TextEditingController();
+    await Get.dialog(
+      AlertDialog(
+        title: const Text('新建话题'),
+        content: TextField(
+          controller: textController,
+          autofocus: true,
+          maxLength: 80,
+          decoration: const InputDecoration(
+            hintText: '输入话题名，例如 #HaloSocial',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('取消'),
+          ),
+          Obx(
+            () => FilledButton(
+              onPressed: controller.topicCreating.value
+                  ? null
+                  : () async {
+                      final title = textController.text.trim();
+                      if (title.isEmpty) {
+                        return;
+                      }
+                      await controller.createTopic(title);
+                      if (context.mounted) {
+                        Get.back();
+                      }
+                    },
+              child: controller.topicCreating.value
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('创建'),
+            ),
+          ),
+        ],
+      ),
+    );
+    textController.dispose();
   }
 }

@@ -42,6 +42,46 @@ export async function getTopics(req, res, next) {
   }
 }
 
+export async function createTopic(req, res, next) {
+  try {
+    const rawTitle = req.body.title;
+    if (typeof rawTitle !== 'string' || !rawTitle.trim()) {
+      return res.status(400).json({ message: 'title is required' });
+    }
+
+    const normalizedTitle = rawTitle.trim().startsWith('#')
+      ? rawTitle.trim()
+      : `#${rawTitle.trim()}`;
+    if (normalizedTitle.length > 80) {
+      return res.status(400).json({ message: 'title must be <= 80 chars' });
+    }
+
+    await pool.query(
+      `INSERT INTO topics (title, posts)
+       VALUES (?, 0)
+       ON DUPLICATE KEY UPDATE title = title`,
+      [normalizedTitle]
+    );
+
+    const [rows] = await pool.query(
+      `SELECT
+         t.*,
+         CASE WHEN utf.topic_id IS NULL THEN 0 ELSE 1 END AS following
+       FROM topics t
+       LEFT JOIN user_topic_follows utf
+         ON utf.topic_id = t.id
+        AND utf.user_handle = ?
+       WHERE t.title = ?
+       LIMIT 1`,
+      [DEFAULT_USER_HANDLE, normalizedTitle]
+    );
+
+    return res.status(201).json(mapTopic(rows[0]));
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function updateTopicFollow(req, res, next) {
   try {
     const topicId = req.params.id;
