@@ -112,6 +112,20 @@ class TweetProvider {
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> createTopic({required String title}) async {
+    final response = await _client.post(
+      Uri.parse('${ApiConstants.baseUrl}/topics'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'title': title}),
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception('创建话题失败: ${response.body}');
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
   Future<List<dynamic>> fetchCommunities() async {
     final response = await _client.get(Uri.parse('${ApiConstants.baseUrl}/communities'));
 

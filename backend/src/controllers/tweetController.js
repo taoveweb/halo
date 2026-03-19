@@ -1,6 +1,7 @@
 import { pool } from '../db/mysql.js';
 
 const DEFAULT_USER_HANDLE = '@you';
+const HASHTAG_PATTERN = /#[\p{L}\p{N}_]+/gu;
 
 function parseBool(value) {
   if (typeof value === 'boolean') return value;
@@ -45,6 +46,24 @@ async function hydrateTweetStats(tweetId) {
      WHERE id = ?`,
     [tweetId, tweetId, tweetId]
   );
+}
+
+async function upsertTopicsByContent(content) {
+  const matches = content.match(HASHTAG_PATTERN) ?? [];
+  if (matches.length === 0) {
+    return;
+  }
+
+  const uniqueTopics = [...new Set(matches.map((topic) => topic.trim()).filter(Boolean))].slice(0, 20);
+
+  for (const title of uniqueTopics) {
+    await pool.query(
+      `INSERT INTO topics (title, posts)
+       VALUES (?, 1)
+       ON DUPLICATE KEY UPDATE posts = posts + 1`,
+      [title]
+    );
+  }
 }
 
 export async function getTweets(req, res, next) {
@@ -136,6 +155,7 @@ export async function postTweet(req, res, next) {
        VALUES (?, ?, ?, 0, 0, 0)`,
       [normalizedAuthor, normalizedHandle, normalizedContent]
     );
+    await upsertTopicsByContent(normalizedContent);
 
     const [rows] = await pool.query(
       `SELECT t.*, 0 AS is_liked, 0 AS is_retweeted

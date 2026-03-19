@@ -46,6 +46,7 @@ class SocialController extends GetxController {
   final RxList<TopicModel> topics = <TopicModel>[].obs;
   final RxBool topicLoading = false.obs;
   final RxnString topicError = RxnString();
+  final RxBool topicCreating = false.obs;
 
   final RxList<NotificationItem> notifications = <NotificationItem>[
     NotificationItem(id: 'n1', title: 'Halo Team 赞了你的动态', minutesAgo: 2),
@@ -140,6 +141,26 @@ class SocialController extends GetxController {
     final index = topics.indexWhere((item) => item.id == topic.id);
     if (index != -1) {
       topics[index] = updated;
+    }
+  }
+
+  Future<void> createTopic(String title) async {
+    if (topicCreating.value) return;
+
+    final normalized = title.trim();
+    if (normalized.isEmpty) return;
+
+    try {
+      topicCreating.value = true;
+      final created = await _tweetService.createTopic(title: normalized);
+      final exists = topics.any((item) => item.id == created.id);
+      if (!exists) {
+        topics.insert(0, created);
+      }
+      searchQuery.value = '';
+      await loadTopics();
+    } finally {
+      topicCreating.value = false;
     }
   }
 
