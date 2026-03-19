@@ -17,6 +17,9 @@ flutter pub get
 
 本项目业务代码使用标准 Flutter API（未使用仅 Android / iOS 可用的原生插件），可迁移到鸿蒙 Flutter 发行版运行。
 
+> 当前仓库默认**不包含** `ohos/` 平台工程目录，所以直接执行 `flutter run -d ohos` 会提示不支持。
+> 需要先按下方步骤初始化鸿蒙平台工程后再运行。
+
 ### 推荐做法
 
 1. 安装鸿蒙 Flutter 工具链（例如 `flutter-ohos` 发行版）。
