@@ -81,11 +81,16 @@ class SocialController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    loadSearchTweets();
     loadCommunities();
   }
 
   Future<void> loadSearchTweets() async {
+    if (searchQuery.value.trim().isEmpty) {
+      searchTweets.clear();
+      searchError.value = null;
+      searchLoading.value = false;
+      return;
+    }
     try {
       searchLoading.value = true;
       searchError.value = null;
@@ -102,6 +107,12 @@ class SocialController extends GetxController {
   }
 
   Future<void> loadTopics() async {
+    if (searchQuery.value.trim().isEmpty) {
+      topics.clear();
+      topicError.value = null;
+      topicLoading.value = false;
+      return;
+    }
     try {
       topicLoading.value = true;
       topicError.value = null;
@@ -124,7 +135,7 @@ class SocialController extends GetxController {
   }
 
   Future<void> refreshAll() async {
-    await Future.wait([loadSearchTweets(), loadCommunities()]);
+    await Future.wait([search(), loadCommunities()]);
   }
 
   Future<void> loadCommunities() async {
@@ -143,7 +154,7 @@ class SocialController extends GetxController {
   void setSearchQuery(String value) {
     searchQuery.value = value;
     _searchDebounce?.cancel();
-    _searchDebounce = Timer(const Duration(milliseconds: 350), loadSearchTweets);
+    _searchDebounce = Timer(const Duration(milliseconds: 350), search);
   }
 
   void clearSearchQuery() {
@@ -153,7 +164,21 @@ class SocialController extends GetxController {
 
     searchQuery.value = '';
     _searchDebounce?.cancel();
-    loadSearchTweets();
+    searchTweets.clear();
+    topics.clear();
+  }
+
+  Future<void> search() async {
+    if (searchQuery.value.trim().isEmpty) {
+      searchTweets.clear();
+      topics.clear();
+      searchError.value = null;
+      topicError.value = null;
+      searchLoading.value = false;
+      topicLoading.value = false;
+      return;
+    }
+    await Future.wait([loadSearchTweets(), loadTopics()]);
   }
 
   Future<void> toggleTopicFollow(TopicModel topic) async {
