@@ -244,8 +244,30 @@ export async function getTweets(req, res, next) {
     const [rows] = await pool.query(
       `${baseQuery}
        ${hasQuery ? 'WHERE t.content LIKE ?' : ''}
-       ORDER BY (t.likes * 2 + t.retweets * 3 + t.comments) DESC, t.created_at DESC, t.id DESC`,
-      [viewerHandle, ...queryParam]
+       ORDER BY (
+         (
+           t.likes * 1.5
+           + t.retweets * 2.5
+           + t.comments * 1.2
+           + LEAST(t.views, 5000) * 0.05
+         ) / POW(GREATEST(TIMESTAMPDIFF(HOUR, t.created_at, UTC_TIMESTAMP()), 1), 0.8)
+         + CASE WHEN t.handle = ? THEN 1.5 ELSE 0 END
+         + CASE WHEN EXISTS (
+           SELECT 1
+           FROM user_following uf
+           WHERE uf.user_handle = ?
+             AND uf.target_handle = t.handle
+         ) THEN 2 ELSE 0 END
+         + CASE WHEN EXISTS (
+           SELECT 1
+           FROM tweet_interactions ti2
+           JOIN tweets tx ON tx.id = ti2.tweet_id
+           WHERE ti2.user_handle = ?
+             AND tx.handle = t.handle
+             AND (ti2.liked = 1 OR ti2.retweeted = 1)
+         ) THEN 1.5 ELSE 0 END
+       ) DESC, t.created_at DESC, t.id DESC`,
+      [viewerHandle, ...queryParam, viewerHandle, viewerHandle, viewerHandle]
     );
     const tweets = rows.map(mapTweet);
     return res.status(200).json(await attachMediaToTweets(tweets));
