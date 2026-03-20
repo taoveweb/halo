@@ -35,11 +35,14 @@ class TweetProvider {
     return jsonDecode(response.body) as List<dynamic>;
   }
 
-  Future<Map<String, dynamic>> postTweet({required String content}) async {
+  Future<Map<String, dynamic>> postTweet({
+    required String content,
+    List<Map<String, String>> media = const [],
+  }) async {
     final response = await _client.post(
       Uri.parse('${ApiConstants.baseUrl}/tweets'),
       headers: _jsonHeaders(),
-      body: jsonEncode({'content': content}),
+      body: jsonEncode({'content': content, 'media': media}),
     );
 
     if (response.statusCode != 201) {
