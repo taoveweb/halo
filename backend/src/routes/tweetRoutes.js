@@ -7,6 +7,7 @@ import {
   getTweets,
   postComment,
   postTweet,
+  recordTweetView,
   removeTweet,
   updateTweet,
   updateTweetInteraction
@@ -24,6 +25,7 @@ router.post('/auth/logout', requireAuth, logout);
 
 router.get('/tweets', optionalAuth, getTweets);
 router.get('/tweets/:id', optionalAuth, getTweetById);
+router.post('/tweets/:id/view', optionalAuth, recordTweetView);
 router.post('/tweets', requireAuth, postTweet);
 router.patch('/tweets/:id', requireAuth, updateTweet);
 router.delete('/tweets/:id', requireAuth, removeTweet);
