@@ -26,7 +26,7 @@ class TweetCard extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
         decoration: const BoxDecoration(
           border: Border(
             bottom: BorderSide(color: Color(0xFF2F3336), width: 0.4),
@@ -38,7 +38,8 @@ class TweetCard extends StatelessWidget {
             CircleAvatar(
               radius: 20,
               backgroundColor: const Color(0xFF1D9BF0),
-              child: Text(tweet.author.characters.first),
+              backgroundImage: tweet.avatarUrl != null ? NetworkImage(tweet.avatarUrl!) : null,
+              child: tweet.avatarUrl == null ? Text(tweet.author.characters.first) : null,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -55,9 +56,12 @@ class TweetCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        '${tweet.handle} · ${DateFormat('MM-dd HH:mm').format(tweet.createdAt)}',
-                        style: const TextStyle(color: Color(0xFF71767B)),
+                      Expanded(
+                        child: Text(
+                          '${tweet.handle} · ${DateFormat('MM-dd HH:mm').format(tweet.createdAt)}',
+                          style: const TextStyle(color: Color(0xFF71767B)),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),
@@ -87,7 +91,7 @@ class TweetCard extends StatelessWidget {
                         color: tweet.isLiked ? const Color(0xFFF91880) : null,
                         onTap: onLike,
                       ),
-                      _StatItem(icon: Icons.share_outlined, value: null, onTap: onShare),
+                      _StatItem(icon: Icons.bookmark_border, value: null, onTap: onShare),
                     ],
                   ),
                 ],
@@ -120,7 +124,7 @@ class _StatItem extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         child: Row(
           children: [
             Icon(icon, color: itemColor, size: 18),
