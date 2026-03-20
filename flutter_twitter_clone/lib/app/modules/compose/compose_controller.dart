@@ -194,7 +194,7 @@ class ComposeController extends GetxController {
           )
           .toList();
       await _tweetService.createTweet(content, media: mediaPayload);
-      await _tweetService.createTweet(content);
+      // await _tweetService.createTweet(content);
       await _clearDraft();
       Get.back(result: true);
       Get.snackbar('成功', '动态已发布');
