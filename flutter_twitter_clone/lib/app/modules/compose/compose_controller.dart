@@ -31,6 +31,8 @@ class ComposeController extends GetxController {
   static const String _draftStorageKey = 'compose_draft_content';
 
   final TweetService _tweetService;
+  final ImagePicker _picker = ImagePicker();
+
   final TextEditingController textController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
   final RxBool isPosting = false.obs;
@@ -60,7 +62,7 @@ class ComposeController extends GetxController {
       return true;
     }
 
-    final shouldLeave = await Get.dialog<bool>(
+    return (await Get.dialog<bool>(
           AlertDialog(
             title: const Text('放弃本次编辑？'),
             content: const Text('你还有未发布的内容，确认返回吗？'),
@@ -75,9 +77,8 @@ class ComposeController extends GetxController {
               ),
             ],
           ),
-        ) ??
+        )) ??
         false;
-    return shouldLeave;
   }
 
   Future<void> saveDraft() async {
