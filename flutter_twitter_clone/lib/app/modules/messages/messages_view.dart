@@ -31,8 +31,8 @@ class MessagesView extends GetView<SocialController> {
             itemBuilder: (context, index) {
               final item = controller.chats[index];
               return ListTile(
-                onTap: () {
-                  controller.openChat(item);
+                onTap: () async {
+                  await controller.openChat(item);
                   Get.snackbar('会话已打开', '你正在与 ${item.name} 聊天');
                 },
                 onLongPress: () => controller.togglePinChat(item),

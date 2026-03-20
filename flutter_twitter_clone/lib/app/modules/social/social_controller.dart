@@ -2,42 +2,12 @@ import 'dart:async';
 
 import 'package:get/get.dart';
 
+import '../../data/models/chat_model.dart';
 import '../../data/models/community_model.dart';
+import '../../data/models/notification_model.dart';
 import '../../data/models/topic_model.dart';
 import '../../data/models/tweet_model.dart';
 import '../../data/services/tweet_service.dart';
-
-class NotificationItem {
-  NotificationItem({
-    required this.id,
-    required this.title,
-    required this.minutesAgo,
-    this.read = false,
-  });
-
-  final String id;
-  final String title;
-  int minutesAgo;
-  bool read;
-}
-
-class ChatItem {
-  ChatItem({
-    required this.id,
-    required this.name,
-    required this.message,
-    required this.time,
-    this.unreadCount = 0,
-    this.pinned = false,
-  });
-
-  final String id;
-  final String name;
-  String message;
-  String time;
-  int unreadCount;
-  bool pinned;
-}
 
 class SocialController extends GetxController {
   SocialController(this._tweetService);
@@ -49,22 +19,8 @@ class SocialController extends GetxController {
   final RxnString topicError = RxnString();
   final RxBool topicCreating = false.obs;
 
-  final RxList<NotificationItem> notifications = <NotificationItem>[
-    NotificationItem(id: 'n1', title: 'Halo Team 赞了你的动态', minutesAgo: 2),
-    NotificationItem(id: 'n2', title: 'Jane Doe 转发了你的动态', minutesAgo: 8),
-    NotificationItem(id: 'n3', title: '你关注的人 @dev_tom 发布了新动态', minutesAgo: 22),
-    NotificationItem(id: 'n4', title: 'Flutter 中文社区 回复了你', minutesAgo: 60),
-    NotificationItem(id: 'n5', title: '你的动态获得了 10 次新点赞', minutesAgo: 120),
-    NotificationItem(id: 'n6', title: '@product_amy 关注了你', minutesAgo: 180),
-  ].obs;
-
-  final RxList<ChatItem> chats = <ChatItem>[
-    ChatItem(id: 'c1', name: 'Jane Doe', message: '首页交互我已经提交 PR 啦。', time: '刚刚', unreadCount: 2),
-    ChatItem(id: 'c2', name: 'Halo Team', message: '今晚 8 点上线新版本，记得回归测试。', time: '12:20'),
-    ChatItem(id: 'c3', name: 'dev_tom', message: '可以把评论接口也接一下吗？', time: '昨天', unreadCount: 1),
-    ChatItem(id: 'c4', name: 'product_amy', message: '下周加上推荐流页面如何？', time: '周二'),
-    ChatItem(id: 'c5', name: 'design_lily', message: '我更新了深色主题规范。', time: '周一'),
-  ].obs;
+  final RxList<NotificationModel> notifications = <NotificationModel>[].obs;
+  final RxList<ChatModel> chats = <ChatModel>[].obs;
 
   final RxList<CommunityModel> communities = <CommunityModel>[].obs;
   final RxBool communityLoading = false.obs;
@@ -82,6 +38,26 @@ class SocialController extends GetxController {
   void onInit() {
     super.onInit();
     loadCommunities();
+    loadNotifications();
+    loadChats();
+  }
+
+  Future<void> loadNotifications() async {
+    try {
+      final items = await _tweetService.fetchNotifications();
+      notifications.assignAll(items);
+    } catch (_) {
+      // 忽略加载失败，保留当前数据
+    }
+  }
+
+  Future<void> loadChats() async {
+    try {
+      final items = await _tweetService.fetchChats();
+      chats.assignAll(items);
+    } catch (_) {
+      // 忽略加载失败，保留当前数据
+    }
   }
 
   Future<void> loadSearchTweets() async {
@@ -127,7 +103,7 @@ class SocialController extends GetxController {
 
   List<TopicModel> get filteredTopics => topics;
 
-  List<NotificationItem> get filteredNotifications {
+  List<NotificationModel> get filteredNotifications {
     if (selectedNotificationFilter.value == 1) {
       return notifications.where((item) => !item.read).toList();
     }
@@ -135,7 +111,7 @@ class SocialController extends GetxController {
   }
 
   Future<void> refreshAll() async {
-    await Future.wait([search(), loadCommunities()]);
+    await Future.wait([search(), loadCommunities(), loadNotifications(), loadChats()]);
   }
 
   Future<void> loadCommunities() async {
@@ -213,30 +189,30 @@ class SocialController extends GetxController {
     selectedNotificationFilter.value = index;
   }
 
-  void markNotificationRead(NotificationItem item) {
-    item.read = true;
-    notifications.refresh();
-  }
-
-  void markAllNotificationsRead() {
-    for (final item in notifications) {
-      item.read = true;
+  Future<void> markNotificationRead(NotificationModel item) async {
+    final updated = await _tweetService.markNotificationRead(item.id);
+    final index = notifications.indexWhere((notification) => notification.id == item.id);
+    if (index != -1) {
+      notifications[index] = updated;
     }
-    notifications.refresh();
   }
 
-  void openChat(ChatItem item) {
-    item.unreadCount = 0;
-    item.time = '刚刚';
-    chats.refresh();
+  Future<void> markAllNotificationsRead() async {
+    final updated = await _tweetService.markAllNotificationsRead();
+    notifications.assignAll(updated);
   }
 
-  void togglePinChat(ChatItem item) {
-    item.pinned = !item.pinned;
-    chats.sort((a, b) {
-      if (a.pinned == b.pinned) return 0;
-      return a.pinned ? -1 : 1;
-    });
+  Future<void> openChat(ChatModel item) async {
+    final updated = await _tweetService.openChat(item.id);
+    final index = chats.indexWhere((chat) => chat.id == item.id);
+    if (index != -1) {
+      chats[index] = updated;
+    }
+  }
+
+  Future<void> togglePinChat(ChatModel item) async {
+    await _tweetService.togglePinChat(item.id);
+    await loadChats();
   }
 
   Future<void> joinCommunity(CommunityModel item) async {

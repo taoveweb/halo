@@ -205,6 +205,89 @@ class TweetProvider {
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
+
+  Future<List<dynamic>> fetchNotifications() async {
+    final response = await _client.get(
+      Uri.parse('${ApiConstants.baseUrl}/notifications'),
+      headers: _jsonHeaders(),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('加载通知失败: ${response.body}');
+    }
+
+    return jsonDecode(response.body) as List<dynamic>;
+  }
+
+  Future<Map<String, dynamic>> markNotificationRead(String notificationId) async {
+    final response = await _client.post(
+      Uri.parse('${ApiConstants.baseUrl}/notifications/$notificationId/read'),
+      headers: _jsonHeaders(),
+      body: jsonEncode({}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('更新通知状态失败: ${response.body}');
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<List<dynamic>> markAllNotificationsRead() async {
+    final response = await _client.post(
+      Uri.parse('${ApiConstants.baseUrl}/notifications/read-all'),
+      headers: _jsonHeaders(),
+      body: jsonEncode({}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('更新通知状态失败: ${response.body}');
+    }
+
+    return jsonDecode(response.body) as List<dynamic>;
+  }
+
+  Future<List<dynamic>> fetchChats() async {
+    final response = await _client.get(
+      Uri.parse('${ApiConstants.baseUrl}/chats'),
+      headers: _jsonHeaders(),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('加载私信失败: ${response.body}');
+    }
+
+    return jsonDecode(response.body) as List<dynamic>;
+  }
+
+  Future<Map<String, dynamic>> openChat(String chatId) async {
+    final response = await _client.post(
+      Uri.parse('${ApiConstants.baseUrl}/chats/$chatId/open'),
+      headers: _jsonHeaders(),
+      body: jsonEncode({}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('打开会话失败: ${response.body}');
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> togglePinChat(String chatId) async {
+    final response = await _client.post(
+      Uri.parse('${ApiConstants.baseUrl}/chats/$chatId/pin'),
+      headers: _jsonHeaders(),
+      body: jsonEncode({}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('更新会话失败: ${response.body}');
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> recordTweetView(String tweetId) async {
     final response = await _client.post(
       Uri.parse('${ApiConstants.baseUrl}/tweets/$tweetId/view'),
