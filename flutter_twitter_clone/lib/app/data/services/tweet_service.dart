@@ -16,8 +16,11 @@ class TweetService {
         .toList();
   }
 
-  Future<TweetModel> createTweet(String content) async {
-    final data = await _provider.postTweet(content: content);
+  Future<TweetModel> createTweet(
+    String content, {
+    List<Map<String, String>> media = const [],
+  }) async {
+    final data = await _provider.postTweet(content: content, media: media);
     return TweetModel.fromJson(data);
   }
 

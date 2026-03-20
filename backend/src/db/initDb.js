@@ -76,15 +76,21 @@ export async function initDb() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `);
 
-  const [tweetViewsColRows] = await pool.query(
-    `SELECT COUNT(*) AS count FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
-    [process.env.MYSQL_DATABASE, 'tweets', 'views']
-  );
 
-  if (tweetViewsColRows[0].count === 0) {
-    await pool.query('ALTER TABLE tweets ADD COLUMN views INT NOT NULL DEFAULT 0 AFTER retweets');
-  }
-
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS tweet_media (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      tweet_id BIGINT UNSIGNED NOT NULL,
+      media_type ENUM('image', 'video') NOT NULL,
+      media_url VARCHAR(255) NOT NULL,
+      mime_type VARCHAR(80) NOT NULL,
+      sort_order INT NOT NULL DEFAULT 0,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      KEY idx_tweet_media_tweet (tweet_id),
+      CONSTRAINT fk_tweet_media_tweet FOREIGN KEY (tweet_id) REFERENCES tweets(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
   await pool.query(`
     CREATE TABLE IF NOT EXISTS comments (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -95,6 +101,22 @@ export async function initDb() {
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (id),
       CONSTRAINT fk_comments_tweet FOREIGN KEY (tweet_id) REFERENCES tweets(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS tweet_interactions (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      tweet_id BIGINT UNSIGNED NOT NULL,
+      user_handle VARCHAR(80) NOT NULL,
+      liked TINYINT(1) NOT NULL DEFAULT 0,
+      retweeted TINYINT(1) NOT NULL DEFAULT 0,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_tweet_user_interaction (tweet_id, user_handle),
+      KEY idx_tweet_interactions_tweet (tweet_id),
+      CONSTRAINT fk_tweet_interactions_tweet FOREIGN KEY (tweet_id) REFERENCES tweets(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `);
 
@@ -121,9 +143,6 @@ export async function initDb() {
   );
 
   const [existing] = await pool.query('SELECT COUNT(*) AS count FROM tweets');
-  if (existing[0].count > 0) {
-    return;
-  }
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS topics (
@@ -182,7 +201,7 @@ export async function initDb() {
   `);
 
   const [existingTweets] = await pool.query('SELECT COUNT(*) AS count FROM tweets');
-  if (existingTweets[0].count === 0) {
+  if (existing[0].count === 0 && existingTweets[0].count === 0) {
     for (const template of seedTemplates) {
       const createdAt = new Date(Date.now() - 1000 * 60 * template.minutesAgo);
 

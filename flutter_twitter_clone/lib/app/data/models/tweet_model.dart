@@ -1,3 +1,41 @@
+class TweetMediaModel {
+  TweetMediaModel({
+    required this.id,
+    required this.mediaType,
+    required this.mediaUrl,
+    required this.mimeType,
+    required this.sortOrder,
+  });
+
+  final String id;
+  final String mediaType;
+  final String mediaUrl;
+  final String mimeType;
+  final int sortOrder;
+
+  bool get isVideo => mediaType == 'video';
+
+  factory TweetMediaModel.fromJson(Map<String, dynamic> json) {
+    return TweetMediaModel(
+      id: json['id'] as String,
+      mediaType: json['mediaType'] as String,
+      mediaUrl: json['mediaUrl'] as String,
+      mimeType: json['mimeType'] as String? ?? '',
+      sortOrder: json['sortOrder'] as int? ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'mediaType': mediaType,
+      'mediaUrl': mediaUrl,
+      'mimeType': mimeType,
+      'sortOrder': sortOrder,
+    };
+  }
+}
+
 class TweetModel {
   TweetModel({
     required this.id,
@@ -12,6 +50,7 @@ class TweetModel {
     this.isLiked = false,
     this.isRetweeted = false,
     this.avatarUrl,
+    this.media = const [],
   });
 
   final String id;
@@ -26,6 +65,7 @@ class TweetModel {
   final bool isLiked;
   final bool isRetweeted;
   final String? avatarUrl;
+  final List<TweetMediaModel> media;
 
   factory TweetModel.fromJson(Map<String, dynamic> json) {
     return TweetModel(
@@ -41,6 +81,9 @@ class TweetModel {
       isLiked: json['isLiked'] as bool? ?? false,
       isRetweeted: json['isRetweeted'] as bool? ?? false,
       avatarUrl: json['avatarUrl'] as String?,
+      media: (json['media'] as List<dynamic>? ?? const [])
+          .map((item) => TweetMediaModel.fromJson(item as Map<String, dynamic>))
+          .toList(),
     );
   }
 
@@ -58,6 +101,7 @@ class TweetModel {
       'isLiked': isLiked,
       'isRetweeted': isRetweeted,
       'avatarUrl': avatarUrl,
+      'media': media.map((item) => item.toJson()).toList(),
     };
   }
 
@@ -74,6 +118,7 @@ class TweetModel {
     bool? isLiked,
     bool? isRetweeted,
     String? avatarUrl,
+    List<TweetMediaModel>? media,
   }) {
     return TweetModel(
       id: id ?? this.id,
@@ -88,6 +133,7 @@ class TweetModel {
       isLiked: isLiked ?? this.isLiked,
       isRetweeted: isRetweeted ?? this.isRetweeted,
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      media: media ?? this.media,
     );
   }
 }

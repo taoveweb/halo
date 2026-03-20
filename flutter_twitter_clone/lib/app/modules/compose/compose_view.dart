@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:video_player/video_player.dart';
 
 import 'compose_controller.dart';
 
@@ -95,6 +98,50 @@ class ComposeView extends GetView<ComposeController> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 12),
+                    Obx(
+                      () => controller.mediaItems.isEmpty
+                          ? const SizedBox.shrink()
+                          : SizedBox(
+                              height: 160,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: controller.mediaItems.length,
+                                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                                itemBuilder: (_, index) {
+                                  final item = controller.mediaItems[index];
+                                  return Stack(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: SizedBox(
+                                          width: 160,
+                                          child: item.isVideo
+                                              ? _LocalVideoPreview(path: item.path)
+                                              : Image.file(File(item.path), fit: BoxFit.cover),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        top: 6,
+                                        right: 6,
+                                        child: GestureDetector(
+                                          onTap: () => controller.removeMediaAt(index),
+                                          child: Container(
+                                            decoration: const BoxDecoration(
+                                              color: Colors.black87,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            padding: const EdgeInsets.all(4),
+                                            child: const Icon(Icons.close, color: Colors.white, size: 16),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ),
+                    ),
                     const Spacer(),
                     Align(
                       alignment: Alignment.centerLeft,
@@ -123,14 +170,14 @@ class ComposeView extends GetView<ComposeController> {
                     ),
                     const Divider(color: Color(0xFF2F3336), thickness: 1),
                     Row(
-                      children: const [
-                        _BottomActionIcon(Icons.photo_outlined),
-                        _BottomActionIcon(Icons.gif_box_outlined),
-                        _BottomActionIcon(Icons.sync_alt),
-                        _BottomActionIcon(Icons.format_list_bulleted),
-                        _BottomActionIcon(Icons.access_time),
-                        _BottomActionIcon(Icons.location_on_outlined),
-                        _BottomActionIcon(Icons.flag_outlined),
+                      children: [
+                        _BottomActionIcon(icon: Icons.photo_outlined, onTap: controller.pickImage),
+                        _BottomActionIcon(icon: Icons.videocam_outlined, onTap: controller.pickVideo),
+                        const _BottomActionIcon(icon: Icons.gif_box_outlined),
+                        const _BottomActionIcon(icon: Icons.sync_alt),
+                        const _BottomActionIcon(icon: Icons.format_list_bulleted),
+                        const _BottomActionIcon(icon: Icons.access_time),
+                        const _BottomActionIcon(icon: Icons.location_on_outlined),
                       ],
                     ),
                   ],
@@ -156,15 +203,69 @@ class ComposeView extends GetView<ComposeController> {
 }
 
 class _BottomActionIcon extends StatelessWidget {
-  const _BottomActionIcon(this.icon);
+  const _BottomActionIcon({required this.icon, this.onTap});
 
   final IconData icon;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(right: 18),
-      child: Icon(icon, color: ComposeView._twitterBlue, size: 24),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Icon(icon, color: ComposeView._twitterBlue, size: 24),
+      ),
+    );
+  }
+}
+
+class _LocalVideoPreview extends StatefulWidget {
+  const _LocalVideoPreview({required this.path});
+
+  final String path;
+
+  @override
+  State<_LocalVideoPreview> createState() => _LocalVideoPreviewState();
+}
+
+class _LocalVideoPreviewState extends State<_LocalVideoPreview> {
+  VideoPlayerController? _videoController;
+
+  @override
+  void initState() {
+    super.initState();
+    final controller = VideoPlayerController.file(File(widget.path));
+    _videoController = controller;
+    controller
+      ..setVolume(0)
+      ..setLooping(true)
+      ..initialize().then((_) {
+        if (!mounted) return;
+        controller.play();
+        setState(() {});
+      });
+  }
+
+  @override
+  void dispose() {
+    _videoController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = _videoController;
+    if (controller == null || !controller.value.isInitialized) {
+      return Container(
+        color: const Color(0xFF1E1E1E),
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    return AspectRatio(
+      aspectRatio: controller.value.aspectRatio == 0 ? 16 / 9 : controller.value.aspectRatio,
+      child: VideoPlayer(controller),
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:video_player/video_player.dart';
 
 import '../data/models/tweet_model.dart';
 
@@ -79,11 +80,17 @@ class TweetCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    tweet.content,
-                    style: const TextStyle(color: Colors.white, height: 1.4),
-                  ),
+                  if (tweet.content.trim().isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      tweet.content,
+                      style: const TextStyle(color: Colors.white, height: 1.4),
+                    ),
+                  ],
+                  if (tweet.media.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    _TweetMediaGrid(media: tweet.media),
+                  ],
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -159,6 +166,124 @@ class TweetCard extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _TweetMediaGrid extends StatelessWidget {
+  const _TweetMediaGrid({required this.media});
+
+  final List<TweetMediaModel> media;
+
+  @override
+  Widget build(BuildContext context) {
+    final visibleMedia = media.take(4).toList();
+    if (visibleMedia.length == 1) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          height: 220,
+          width: double.infinity,
+          child: _TweetMediaItem(media: visibleMedia.first),
+        ),
+      );
+    }
+
+    return GridView.builder(
+      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: true,
+      itemCount: visibleMedia.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 6,
+        mainAxisSpacing: 6,
+        childAspectRatio: 1.2,
+      ),
+      itemBuilder: (_, index) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: _TweetMediaItem(media: visibleMedia[index]),
+        );
+      },
+    );
+  }
+}
+
+class _TweetMediaItem extends StatelessWidget {
+  const _TweetMediaItem({required this.media});
+
+  final TweetMediaModel media;
+
+  @override
+  Widget build(BuildContext context) {
+    if (media.isVideo) {
+      return _AutoPlayVideo(url: media.mediaUrl);
+    }
+    return Image.network(media.mediaUrl, fit: BoxFit.cover);
+  }
+}
+
+class _AutoPlayVideo extends StatefulWidget {
+  const _AutoPlayVideo({required this.url});
+
+  final String url;
+
+  @override
+  State<_AutoPlayVideo> createState() => _AutoPlayVideoState();
+}
+
+class _AutoPlayVideoState extends State<_AutoPlayVideo> {
+  VideoPlayerController? _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    final controller = VideoPlayerController.networkUrl(Uri.parse(widget.url));
+    _controller = controller;
+    controller
+      ..setVolume(0)
+      ..setLooping(true)
+      ..initialize().then((_) {
+        if (!mounted) return;
+        controller.play();
+        setState(() {});
+      });
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) {
+      return Container(
+        color: const Color(0xFF1E1E1E),
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        FittedBox(
+          fit: BoxFit.cover,
+          child: SizedBox(
+            width: controller.value.size.width,
+            height: controller.value.size.height,
+            child: VideoPlayer(controller),
+          ),
+        ),
+        const Align(
+          alignment: Alignment.bottomRight,
+          child: Padding(
+            padding: EdgeInsets.all(6),
+            child: Icon(Icons.volume_off, color: Colors.white70, size: 16),
+          ),
+        ),
+      ],
     );
   }
 }

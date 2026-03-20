@@ -1,7 +1,17 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { pool } from '../db/mysql.js';
 
 const DEFAULT_USER_HANDLE = '@you';
 const HASHTAG_PATTERN = /#[\p{L}\p{N}_]+/gu;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadDir = path.join(__dirname, '../../uploads');
+const MAX_TWEET_MEDIA_COUNT = 4;
+const MAX_IMAGE_SIZE = 8 * 1024 * 1024;
+const MAX_VIDEO_SIZE = 40 * 1024 * 1024;
 
 function parseBool(value) {
   if (typeof value === 'boolean') return value;
@@ -24,7 +34,8 @@ function mapTweet(row) {
     retweets: row.retweets,
     views: row.views,
     isLiked: Boolean(row.is_liked),
-    isRetweeted: Boolean(row.is_retweeted)
+    isRetweeted: Boolean(row.is_retweeted),
+    media: []
   };
 }
 
@@ -37,6 +48,75 @@ function mapComment(row) {
     content: row.content,
     createdAt: new Date(row.created_at).toISOString()
   };
+}
+
+function detectMediaType(mimeType) {
+  if (mimeType.startsWith('image/')) return 'image';
+  if (mimeType.startsWith('video/')) return 'video';
+  return null;
+}
+
+function extensionFromMime(mimeType) {
+  const map = {
+    'image/jpeg': 'jpg',
+    'image/jpg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+    'image/gif': 'gif',
+    'video/mp4': 'mp4',
+    'video/quicktime': 'mov',
+    'video/webm': 'webm'
+  };
+  return map[mimeType] ?? null;
+}
+
+function mapMedia(rows) {
+  return rows.map((row) => ({
+    id: String(row.id),
+    mediaType: row.media_type,
+    mediaUrl: row.media_url,
+    mimeType: row.mime_type,
+    sortOrder: row.sort_order
+  }));
+}
+
+async function attachMediaToTweets(tweets) {
+  if (tweets.length === 0) {
+    return tweets;
+  }
+
+  const ids = tweets.map((item) => Number(item.id)).filter((item) => Number.isFinite(item));
+  if (ids.length === 0) {
+    return tweets;
+  }
+
+  const [mediaRows] = await pool.query(
+    `SELECT id, tweet_id, media_type, media_url, mime_type, sort_order
+     FROM tweet_media
+     WHERE tweet_id IN (?)
+     ORDER BY tweet_id ASC, sort_order ASC, id ASC`,
+    [ids]
+  );
+
+  const mediaByTweet = new Map();
+  for (const row of mediaRows) {
+    const key = String(row.tweet_id);
+    if (!mediaByTweet.has(key)) {
+      mediaByTweet.set(key, []);
+    }
+    mediaByTweet.get(key).push({
+      id: String(row.id),
+      mediaType: row.media_type,
+      mediaUrl: row.media_url,
+      mimeType: row.mime_type,
+      sortOrder: row.sort_order
+    });
+  }
+
+  return tweets.map((tweet) => ({
+    ...tweet,
+    media: mediaByTweet.get(tweet.id) ?? []
+  }));
 }
 
 async function hydrateTweetStats(tweetId) {
@@ -63,6 +143,61 @@ async function upsertTopicsByContent(content) {
        VALUES (?, 1)
        ON DUPLICATE KEY UPDATE posts = posts + 1`,
       [title]
+    );
+  }
+}
+
+async function persistTweetMedia({ tweetId, mediaItems, host }) {
+  if (!Array.isArray(mediaItems) || mediaItems.length === 0) {
+    return;
+  }
+
+  if (mediaItems.length > MAX_TWEET_MEDIA_COUNT) {
+    throw new Error(`最多允许上传 ${MAX_TWEET_MEDIA_COUNT} 个媒体文件`);
+  }
+
+  await fs.mkdir(uploadDir, { recursive: true });
+
+  for (let index = 0; index < mediaItems.length; index += 1) {
+    const item = mediaItems[index];
+    const mediaBase64 = item?.mediaBase64?.trim();
+
+    if (!mediaBase64) {
+      throw new Error('mediaBase64 is required');
+    }
+
+    const dataUrlMatch = mediaBase64.match(/^data:([a-zA-Z0-9.+/-]+);base64,(.+)$/);
+    if (!dataUrlMatch) {
+      throw new Error('invalid mediaBase64 format');
+    }
+
+    const mimeType = dataUrlMatch[1].toLowerCase();
+    const payload = dataUrlMatch[2];
+    const mediaType = detectMediaType(mimeType);
+    const ext = extensionFromMime(mimeType);
+
+    if (!mediaType || !ext) {
+      throw new Error(`unsupported media type: ${mimeType}`);
+    }
+
+    const buffer = Buffer.from(payload, 'base64');
+    if (!buffer || buffer.length === 0) {
+      throw new Error('invalid media payload');
+    }
+
+    const maxBytes = mediaType === 'image' ? MAX_IMAGE_SIZE : MAX_VIDEO_SIZE;
+    if (buffer.length > maxBytes) {
+      throw new Error(`${mediaType} size exceeds limit`);
+    }
+
+    const filename = `tweet_${tweetId}_${Date.now()}_${index}.${ext}`;
+    await fs.writeFile(path.join(uploadDir, filename), buffer);
+
+    const mediaUrl = `${host}/uploads/${filename}`;
+    await pool.query(
+      `INSERT INTO tweet_media (tweet_id, media_type, media_url, mime_type, sort_order)
+       VALUES (?, ?, ?, ?, ?)`,
+      [tweetId, mediaType, mediaUrl, mimeType, index]
     );
   }
 }
@@ -102,7 +237,8 @@ export async function getTweets(req, res, next) {
          ORDER BY t.created_at DESC, t.id DESC`,
         [viewerHandle, viewerHandle, viewerHandle, ...queryParam]
       );
-      return res.status(200).json(rows.map(mapTweet));
+      const tweets = rows.map(mapTweet);
+      return res.status(200).json(await attachMediaToTweets(tweets));
     }
 
     const [rows] = await pool.query(
@@ -111,7 +247,8 @@ export async function getTweets(req, res, next) {
        ORDER BY (t.likes * 2 + t.retweets * 3 + t.comments) DESC, t.created_at DESC, t.id DESC`,
       [viewerHandle, ...queryParam]
     );
-    return res.status(200).json(rows.map(mapTweet));
+    const tweets = rows.map(mapTweet);
+    return res.status(200).json(await attachMediaToTweets(tweets));
   } catch (error) {
     next(error);
   }
@@ -139,7 +276,17 @@ export async function getTweetById(req, res, next) {
       return res.status(404).json({ message: 'Tweet not found' });
     }
 
-    return res.status(200).json(mapTweet(rows[0]));
+    const tweet = mapTweet(rows[0]);
+    const [mediaRows] = await pool.query(
+      `SELECT id, media_type, media_url, mime_type, sort_order
+       FROM tweet_media
+       WHERE tweet_id = ?
+       ORDER BY sort_order ASC, id ASC`,
+      [req.params.id]
+    );
+
+    tweet.media = mapMedia(mediaRows);
+    return res.status(200).json(tweet);
   } catch (error) {
     next(error);
   }
@@ -147,12 +294,13 @@ export async function getTweetById(req, res, next) {
 
 export async function postTweet(req, res, next) {
   try {
-    const { content } = req.body;
-    if (!content || !content.trim()) {
-      return res.status(400).json({ message: 'content is required' });
+    const { content, media = [] } = req.body;
+    const normalizedContent = content?.trim() ?? '';
+
+    if (!normalizedContent && (!Array.isArray(media) || media.length === 0)) {
+      return res.status(400).json({ message: 'content or media is required' });
     }
 
-    const normalizedContent = content.trim();
     if (normalizedContent.length > 280) {
       return res.status(400).json({ message: 'content must be <= 280 chars' });
     }
@@ -165,7 +313,18 @@ export async function postTweet(req, res, next) {
        VALUES (?, ?, ?, 0, 0, 0)`,
       [normalizedAuthor, normalizedHandle, normalizedContent]
     );
-    await upsertTopicsByContent(normalizedContent);
+
+    const host = `${req.protocol}://${req.get('host')}`;
+    try {
+      await persistTweetMedia({ tweetId: result.insertId, mediaItems: media, host });
+    } catch (mediaError) {
+      await pool.query('DELETE FROM tweets WHERE id = ?', [result.insertId]);
+      return res.status(400).json({ message: mediaError.message || 'media upload failed' });
+    }
+
+    if (normalizedContent) {
+      await upsertTopicsByContent(normalizedContent);
+    }
 
     const [rows] = await pool.query(
       `SELECT t.*, 0 AS is_liked, 0 AS is_retweeted
@@ -175,7 +334,17 @@ export async function postTweet(req, res, next) {
       [result.insertId]
     );
 
-    return res.status(201).json(mapTweet(rows[0]));
+    const tweet = mapTweet(rows[0]);
+    const [mediaRows] = await pool.query(
+      `SELECT id, media_type, media_url, mime_type, sort_order
+       FROM tweet_media
+       WHERE tweet_id = ?
+       ORDER BY sort_order ASC, id ASC`,
+      [result.insertId]
+    );
+    tweet.media = mapMedia(mediaRows);
+
+    return res.status(201).json(tweet);
   } catch (error) {
     next(error);
   }
@@ -284,7 +453,17 @@ export async function updateTweetInteraction(req, res, next) {
       [viewerHandle, id]
     );
 
-    return res.status(200).json(mapTweet(rows[0]));
+    const tweet = mapTweet(rows[0]);
+    const [mediaRows] = await pool.query(
+      `SELECT id, media_type, media_url, mime_type, sort_order
+       FROM tweet_media
+       WHERE tweet_id = ?
+       ORDER BY sort_order ASC, id ASC`,
+      [id]
+    );
+    tweet.media = mapMedia(mediaRows);
+
+    return res.status(200).json(tweet);
   } catch (error) {
     next(error);
   }
