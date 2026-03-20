@@ -21,7 +21,7 @@ class NotificationsView extends GetView<SocialController> {
         title: const Text('通知'),
         actions: [
           IconButton(
-            onPressed: controller.markAllNotificationsRead,
+            onPressed: () => controller.markAllNotificationsRead(),
             icon: const Icon(Icons.done_all),
             tooltip: '全部标为已读',
           ),

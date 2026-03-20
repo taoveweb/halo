@@ -1,5 +1,7 @@
+import '../models/chat_model.dart';
 import '../models/comment_model.dart';
 import '../models/community_model.dart';
+import '../models/notification_model.dart';
 import '../models/topic_model.dart';
 import '../models/tweet_model.dart';
 import '../providers/tweet_provider.dart';
@@ -87,6 +89,37 @@ class TweetService {
   }) async {
     final data = await _provider.updateCommunityJoin(communityId: communityId, active: active);
     return CommunityModel.fromJson(data);
+  }
+
+
+  Future<List<NotificationModel>> fetchNotifications() async {
+    final data = await _provider.fetchNotifications();
+    return data.map((item) => NotificationModel.fromJson(item as Map<String, dynamic>)).toList();
+  }
+
+  Future<NotificationModel> markNotificationRead(String notificationId) async {
+    final data = await _provider.markNotificationRead(notificationId);
+    return NotificationModel.fromJson(data);
+  }
+
+  Future<List<NotificationModel>> markAllNotificationsRead() async {
+    final data = await _provider.markAllNotificationsRead();
+    return data.map((item) => NotificationModel.fromJson(item as Map<String, dynamic>)).toList();
+  }
+
+  Future<List<ChatModel>> fetchChats() async {
+    final data = await _provider.fetchChats();
+    return data.map((item) => ChatModel.fromJson(item as Map<String, dynamic>)).toList();
+  }
+
+  Future<ChatModel> openChat(String chatId) async {
+    final data = await _provider.openChat(chatId);
+    return ChatModel.fromJson(data);
+  }
+
+  Future<ChatModel> togglePinChat(String chatId) async {
+    final data = await _provider.togglePinChat(chatId);
+    return ChatModel.fromJson(data);
   }
 
   Future<TweetModel> recordTweetView(String tweetId) async {
