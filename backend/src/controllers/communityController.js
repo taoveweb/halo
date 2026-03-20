@@ -23,6 +23,7 @@ function mapCommunity(row) {
 
 export async function getCommunities(_req, res, next) {
   try {
+    const viewerHandle = _req.authUser?.handle || DEFAULT_USER_HANDLE;
     const [rows] = await pool.query(
       `SELECT
          c.*,
@@ -32,7 +33,7 @@ export async function getCommunities(_req, res, next) {
          ON ucj.community_id = c.id
         AND ucj.user_handle = ?
        ORDER BY c.members DESC, c.id ASC`,
-      [DEFAULT_USER_HANDLE]
+      [viewerHandle]
     );
 
     return res.status(200).json(rows.map(mapCommunity));
@@ -43,6 +44,7 @@ export async function getCommunities(_req, res, next) {
 
 export async function updateCommunityJoin(req, res, next) {
   try {
+    const viewerHandle = req.authUser?.handle || DEFAULT_USER_HANDLE;
     const communityId = req.params.id;
     const active = parseBool(req.body.active);
     if (active === null) {
@@ -58,11 +60,11 @@ export async function updateCommunityJoin(req, res, next) {
       await pool.query(
         `INSERT IGNORE INTO user_community_joins (user_handle, community_id)
          VALUES (?, ?)`,
-        [DEFAULT_USER_HANDLE, communityId]
+        [viewerHandle, communityId]
       );
     } else {
       await pool.query('DELETE FROM user_community_joins WHERE user_handle = ? AND community_id = ?', [
-        DEFAULT_USER_HANDLE,
+        viewerHandle,
         communityId
       ]);
     }
@@ -77,7 +79,7 @@ export async function updateCommunityJoin(req, res, next) {
         AND ucj.user_handle = ?
        WHERE c.id = ?
        LIMIT 1`,
-      [DEFAULT_USER_HANDLE, communityId]
+      [viewerHandle, communityId]
     );
 
     return res.status(200).json(mapCommunity(communityRows[0]));

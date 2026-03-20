@@ -68,7 +68,7 @@ async function upsertTopicsByContent(content) {
 
 export async function getTweets(req, res, next) {
   try {
-    const viewerHandle = req.query.viewerHandle?.trim() || DEFAULT_USER_HANDLE;
+    const viewerHandle = req.authUser?.handle || req.query.viewerHandle?.trim() || DEFAULT_USER_HANDLE;
     const feed = req.query.feed === 'following' ? 'following' : 'for_you';
     const query = req.query.query?.trim() || '';
     const hasQuery = query.length > 0;
@@ -118,7 +118,7 @@ export async function getTweets(req, res, next) {
 
 export async function getTweetById(req, res, next) {
   try {
-    const viewerHandle = req.query.viewerHandle?.trim() || DEFAULT_USER_HANDLE;
+    const viewerHandle = req.authUser?.handle || req.query.viewerHandle?.trim() || DEFAULT_USER_HANDLE;
     const [rows] = await pool.query(
       `SELECT
          t.*,
@@ -233,6 +233,7 @@ export async function postComment(req, res, next) {
 
 export async function updateTweetInteraction(req, res, next) {
   try {
+    const viewerHandle = req.authUser?.handle || DEFAULT_USER_HANDLE;
     const { id } = req.params;
     const action = req.params.action;
     const active = parseBool(req.body.active);
@@ -255,14 +256,14 @@ export async function updateTweetInteraction(req, res, next) {
       `INSERT INTO tweet_interactions (tweet_id, user_handle, liked, retweeted)
        VALUES (?, ?, 0, 0)
        ON DUPLICATE KEY UPDATE updated_at = CURRENT_TIMESTAMP`,
-      [id, DEFAULT_USER_HANDLE]
+      [id, viewerHandle]
     );
 
     await pool.query(
       `UPDATE tweet_interactions
        SET ${field} = ?, updated_at = CURRENT_TIMESTAMP
        WHERE tweet_id = ? AND user_handle = ?`,
-      [active ? 1 : 0, id, DEFAULT_USER_HANDLE]
+      [active ? 1 : 0, id, viewerHandle]
     );
 
     await hydrateTweetStats(id);
@@ -278,7 +279,7 @@ export async function updateTweetInteraction(req, res, next) {
         AND ti.user_handle = ?
        WHERE t.id = ?
        LIMIT 1`,
-      [DEFAULT_USER_HANDLE, id]
+      [viewerHandle, id]
     );
 
     return res.status(200).json(mapTweet(rows[0]));
