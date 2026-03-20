@@ -13,6 +13,9 @@ class TweetCard extends StatelessWidget {
     this.onLike,
     this.onRetweet,
     this.onShare,
+    this.onEdit,
+    this.onDelete,
+    this.canManage = false,
   });
 
   final TweetModel tweet;
@@ -21,6 +24,9 @@ class TweetCard extends StatelessWidget {
   final VoidCallback? onLike;
   final VoidCallback? onRetweet;
   final VoidCallback? onShare;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+  final bool canManage;
 
   @override
   Widget build(BuildContext context) {
@@ -64,6 +70,14 @@ class TweetCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: () => _showMoreActions(context),
+                        child: const Padding(
+                          padding: EdgeInsets.all(4),
+                          child: Icon(Icons.more_horiz, color: Color(0xFF71767B), size: 20),
+                        ),
+                      ),
                     ],
                   ),
                   if (tweet.content.trim().isNotEmpty) ...[
@@ -98,6 +112,10 @@ class TweetCard extends StatelessWidget {
                         color: tweet.isLiked ? const Color(0xFFF91880) : null,
                         onTap: onLike,
                       ),
+                      _StatItem(
+                        icon: Icons.bar_chart,
+                        value: tweet.views,
+                      ),
                       _StatItem(icon: Icons.bookmark_border, value: null, onTap: onShare),
                     ],
                   ),
@@ -107,6 +125,47 @@ class TweetCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _showMoreActions(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF15202B),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (canManage) ...[
+                ListTile(
+                  leading: const Icon(Icons.edit_outlined, color: Colors.white),
+                  title: const Text('重新编辑', style: TextStyle(color: Colors.white)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    onEdit?.call();
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.delete_outline, color: Color(0xFFF4212E)),
+                  title: const Text('删除', style: TextStyle(color: Color(0xFFF4212E))),
+                  onTap: () {
+                    Navigator.pop(context);
+                    onDelete?.call();
+                  },
+                ),
+              ] else
+                const ListTile(
+                  leading: Icon(Icons.lock_outline, color: Color(0xFF71767B)),
+                  title: Text('仅作者可编辑或删除', style: TextStyle(color: Color(0xFF71767B))),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

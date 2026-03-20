@@ -52,6 +52,19 @@ class TweetProvider {
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> fetchTweetById(String tweetId) async {
+    final response = await _client.get(
+      Uri.parse('${ApiConstants.baseUrl}/tweets/$tweetId'),
+      headers: _jsonHeaders(),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('加载动态失败: ${response.body}');
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> updateTweetInteraction({
     required String tweetId,
     required String action,
@@ -68,6 +81,34 @@ class TweetProvider {
     }
 
     return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> updateTweet({
+    required String tweetId,
+    required String content,
+  }) async {
+    final response = await _client.patch(
+      Uri.parse('${ApiConstants.baseUrl}/tweets/$tweetId'),
+      headers: _jsonHeaders(),
+      body: jsonEncode({'content': content}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('编辑动态失败: ${response.body}');
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<void> deleteTweet(String tweetId) async {
+    final response = await _client.delete(
+      Uri.parse('${ApiConstants.baseUrl}/tweets/$tweetId'),
+      headers: _jsonHeaders(),
+    );
+
+    if (response.statusCode != 204) {
+      throw Exception('删除动态失败: ${response.body}');
+    }
   }
 
   Future<List<dynamic>> fetchComments(String tweetId) async {

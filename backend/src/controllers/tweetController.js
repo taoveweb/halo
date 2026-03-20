@@ -32,6 +32,7 @@ function mapTweet(row) {
     likes: row.likes,
     comments: row.comments,
     retweets: row.retweets,
+    views: row.views,
     isLiked: Boolean(row.is_liked),
     isRetweeted: Boolean(row.is_retweeted),
     media: []
@@ -256,6 +257,7 @@ export async function getTweets(req, res, next) {
 export async function getTweetById(req, res, next) {
   try {
     const viewerHandle = req.authUser?.handle || req.query.viewerHandle?.trim() || DEFAULT_USER_HANDLE;
+    await pool.query('UPDATE tweets SET views = views + 1 WHERE id = ?', [req.params.id]);
     const [rows] = await pool.query(
       `SELECT
          t.*,
@@ -462,6 +464,73 @@ export async function updateTweetInteraction(req, res, next) {
     tweet.media = mapMedia(mediaRows);
 
     return res.status(200).json(tweet);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateTweet(req, res, next) {
+  try {
+    const { content } = req.body;
+    if (!content || !content.trim()) {
+      return res.status(400).json({ message: 'content is required' });
+    }
+
+    const normalizedContent = content.trim();
+    if (normalizedContent.length > 280) {
+      return res.status(400).json({ message: 'content must be <= 280 chars' });
+    }
+
+    const [tweetRows] = await pool.query(
+      'SELECT id, handle FROM tweets WHERE id = ? LIMIT 1',
+      [req.params.id]
+    );
+    if (tweetRows.length === 0) {
+      return res.status(404).json({ message: 'Tweet not found' });
+    }
+
+    if (tweetRows[0].handle !== req.authUser.handle) {
+      return res.status(403).json({ message: 'No permission to edit this tweet' });
+    }
+
+    await pool.query('UPDATE tweets SET content = ? WHERE id = ?', [normalizedContent, req.params.id]);
+
+    const [rows] = await pool.query(
+      `SELECT
+         t.*,
+         COALESCE(ti.liked, 0) AS is_liked,
+         COALESCE(ti.retweeted, 0) AS is_retweeted
+       FROM tweets t
+       LEFT JOIN tweet_interactions ti
+         ON ti.tweet_id = t.id
+        AND ti.user_handle = ?
+       WHERE t.id = ?
+       LIMIT 1`,
+      [req.authUser.handle, req.params.id]
+    );
+
+    return res.status(200).json(mapTweet(rows[0]));
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function removeTweet(req, res, next) {
+  try {
+    const [tweetRows] = await pool.query(
+      'SELECT id, handle FROM tweets WHERE id = ? LIMIT 1',
+      [req.params.id]
+    );
+    if (tweetRows.length === 0) {
+      return res.status(404).json({ message: 'Tweet not found' });
+    }
+
+    if (tweetRows[0].handle !== req.authUser.handle) {
+      return res.status(403).json({ message: 'No permission to delete this tweet' });
+    }
+
+    await pool.query('DELETE FROM tweets WHERE id = ?', [req.params.id]);
+    return res.status(204).send();
   } catch (error) {
     next(error);
   }

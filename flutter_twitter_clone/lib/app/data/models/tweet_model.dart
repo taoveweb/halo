@@ -46,6 +46,7 @@ class TweetModel {
     this.likes = 0,
     this.comments = 0,
     this.retweets = 0,
+    this.views = 0,
     this.isLiked = false,
     this.isRetweeted = false,
     this.avatarUrl,
@@ -60,6 +61,7 @@ class TweetModel {
   final int likes;
   final int comments;
   final int retweets;
+  final int views;
   final bool isLiked;
   final bool isRetweeted;
   final String? avatarUrl;
@@ -75,6 +77,7 @@ class TweetModel {
       likes: json['likes'] as int? ?? 0,
       comments: json['comments'] as int? ?? 0,
       retweets: json['retweets'] as int? ?? 0,
+      views: json['views'] as int? ?? 0,
       isLiked: json['isLiked'] as bool? ?? false,
       isRetweeted: json['isRetweeted'] as bool? ?? false,
       avatarUrl: json['avatarUrl'] as String?,
@@ -94,6 +97,7 @@ class TweetModel {
       'likes': likes,
       'comments': comments,
       'retweets': retweets,
+      'views': views,
       'isLiked': isLiked,
       'isRetweeted': isRetweeted,
       'avatarUrl': avatarUrl,
@@ -110,6 +114,7 @@ class TweetModel {
     int? likes,
     int? comments,
     int? retweets,
+    int? views,
     bool? isLiked,
     bool? isRetweeted,
     String? avatarUrl,
@@ -124,6 +129,7 @@ class TweetModel {
       likes: likes ?? this.likes,
       comments: comments ?? this.comments,
       retweets: retweets ?? this.retweets,
+      views: views ?? this.views,
       isLiked: isLiked ?? this.isLiked,
       isRetweeted: isRetweeted ?? this.isRetweeted,
       avatarUrl: avatarUrl ?? this.avatarUrl,

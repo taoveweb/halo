@@ -48,6 +48,19 @@ class HomeController extends GetxController {
     _replaceTweet(updated);
   }
 
+  Future<void> editTweet({
+    required TweetModel tweet,
+    required String content,
+  }) async {
+    final updated = await _tweetService.updateTweet(tweetId: tweet.id, content: content);
+    _replaceTweet(updated);
+  }
+
+  Future<void> deleteTweet(TweetModel tweet) async {
+    await _tweetService.deleteTweet(tweet.id);
+    tweets.removeWhere((item) => item.id == tweet.id);
+  }
+
   void _replaceTweet(TweetModel updated) {
     final index = tweets.indexWhere((item) => item.id == updated.id);
     if (index != -1) {

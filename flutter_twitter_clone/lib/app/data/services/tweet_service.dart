@@ -24,6 +24,11 @@ class TweetService {
     return TweetModel.fromJson(data);
   }
 
+  Future<TweetModel> fetchTweetById(String tweetId) async {
+    final data = await _provider.fetchTweetById(tweetId);
+    return TweetModel.fromJson(data);
+  }
+
   Future<TweetModel> likeTweet({required String tweetId, required bool active}) async {
     final data = await _provider.updateTweetInteraction(tweetId: tweetId, action: 'like', active: active);
     return TweetModel.fromJson(data);
@@ -33,6 +38,15 @@ class TweetService {
     final data =
         await _provider.updateTweetInteraction(tweetId: tweetId, action: 'retweet', active: active);
     return TweetModel.fromJson(data);
+  }
+
+  Future<TweetModel> updateTweet({required String tweetId, required String content}) async {
+    final data = await _provider.updateTweet(tweetId: tweetId, content: content);
+    return TweetModel.fromJson(data);
+  }
+
+  Future<void> deleteTweet(String tweetId) {
+    return _provider.deleteTweet(tweetId);
   }
 
   Future<List<CommentModel>> fetchComments(String tweetId) async {

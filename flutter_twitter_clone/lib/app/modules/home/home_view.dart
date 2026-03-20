@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../data/models/tweet_model.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/app_bottom_nav.dart';
 import '../../widgets/tweet_card.dart';
+import '../auth/auth_controller.dart';
 import 'home_controller.dart';
 
 class HomeView extends GetView<HomeController> {
@@ -12,6 +14,7 @@ class HomeView extends GetView<HomeController> {
 
   @override
   Widget build(BuildContext context) {
+    final authController = Get.find<AuthController>();
     return Scaffold(
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF1D9BF0),
@@ -62,8 +65,11 @@ class HomeView extends GetView<HomeController> {
                       final tweet = controller.tweets[index];
                       return TweetCard(
                         tweet: tweet,
+                        canManage: authController.currentUser.value?.handle == tweet.handle,
                         onLike: () => controller.toggleLike(tweet),
                         onRetweet: () => controller.toggleRetweet(tweet),
+                        onEdit: () => _showEditDialog(context, tweet),
+                        onDelete: () => _confirmDelete(tweet),
                         onComment: () async {
                           final updated = await Get.toNamed(AppRoutes.tweetDetail, arguments: tweet);
                           if (updated == true) {
@@ -91,6 +97,66 @@ class HomeView extends GetView<HomeController> {
         );
       }),
     );
+  }
+
+  Future<void> _showEditDialog(BuildContext context, TweetModel tweet) async {
+    final inputController = TextEditingController(text: tweet.content);
+    final content = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('重新编辑'),
+        content: TextField(
+          controller: inputController,
+          maxLength: 280,
+          minLines: 2,
+          maxLines: 6,
+          decoration: const InputDecoration(hintText: '编辑动态内容'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, inputController.text.trim()),
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
+
+    if (content == null || content.isEmpty || content == tweet.content) {
+      return;
+    }
+
+    try {
+      await controller.editTweet(tweet: tweet, content: content);
+      Get.snackbar('成功', '动态已更新', snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      Get.snackbar('编辑失败', e.toString(), snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
+  Future<void> _confirmDelete(TweetModel tweet) async {
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('删除动态'),
+        content: const Text('确认删除这条动态吗？此操作无法撤销。'),
+        actions: [
+          TextButton(onPressed: () => Get.back(result: false), child: const Text('取消')),
+          FilledButton(onPressed: () => Get.back(result: true), child: const Text('删除')),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await controller.deleteTweet(tweet);
+      Get.snackbar('成功', '动态已删除', snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      Get.snackbar('删除失败', e.toString(), snackPosition: SnackPosition.BOTTOM);
+    }
   }
 }
 
