@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:video_player/video_player.dart';
@@ -117,8 +115,8 @@ class ComposeView extends GetView<ComposeController> {
                                         child: SizedBox(
                                           width: 160,
                                           child: item.isVideo
-                                              ? _LocalVideoPreview(path: item.path)
-                                              : Image.file(File(item.path), fit: BoxFit.cover),
+                                              ? _LocalVideoPreview(dataUrl: item.dataUrl)
+                                              : Image.network(item.dataUrl, fit: BoxFit.cover),
                                         ),
                                       ),
                                       Positioned(
@@ -222,9 +220,9 @@ class _BottomActionIcon extends StatelessWidget {
 }
 
 class _LocalVideoPreview extends StatefulWidget {
-  const _LocalVideoPreview({required this.path});
+  const _LocalVideoPreview({required this.dataUrl});
 
-  final String path;
+  final String dataUrl;
 
   @override
   State<_LocalVideoPreview> createState() => _LocalVideoPreviewState();
@@ -236,16 +234,25 @@ class _LocalVideoPreviewState extends State<_LocalVideoPreview> {
   @override
   void initState() {
     super.initState();
-    final controller = VideoPlayerController.file(File(widget.path));
-    _videoController = controller;
-    controller
-      ..setVolume(0)
-      ..setLooping(true)
-      ..initialize().then((_) {
-        if (!mounted) return;
+    _initializeVideo();
+  }
+
+  Future<void> _initializeVideo() async {
+    try {
+      final controller = VideoPlayerController.network(widget.dataUrl);
+      _videoController = controller;
+      await controller.initialize();
+      await controller.setVolume(0);
+      await controller.setLooping(true);
+      if (mounted) {
         controller.play();
         setState(() {});
-      });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {});
+      }
+    }
   }
 
   @override

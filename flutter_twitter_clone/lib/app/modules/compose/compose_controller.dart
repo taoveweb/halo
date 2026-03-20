@@ -34,7 +34,6 @@ class ComposeController extends GetxController {
   final ImagePicker _picker = ImagePicker();
 
   final TextEditingController textController = TextEditingController();
-  final ImagePicker _picker = ImagePicker();
   final RxBool isPosting = false.obs;
   final RxInt contentLength = 0.obs;
   final RxList<ComposeMediaItem> mediaItems = <ComposeMediaItem>[].obs;
@@ -58,7 +57,8 @@ class ComposeController extends GetxController {
   }
 
   Future<bool> handleCloseAttempt() async {
-    if (isPosting.value || (textController.text.trim().isEmpty && mediaItems.isEmpty)) {
+    if (isPosting.value ||
+        (textController.text.trim().isEmpty && mediaItems.isEmpty)) {
       return true;
     }
 
@@ -100,7 +100,7 @@ class ComposeController extends GetxController {
       Get.snackbar('提示', '最多上传 $maxMediaCount 个媒体文件');
       return;
     }
-    final file = await _picker.pickImage(imageQuality: 85);
+    final file = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
     if (file == null) return;
     await _appendMedia(file, 'image');
   }
@@ -110,7 +110,8 @@ class ComposeController extends GetxController {
       Get.snackbar('提示', '最多上传 $maxMediaCount 个媒体文件');
       return;
     }
-    final file = await _picker.pickVideo(maxDuration: const Duration(seconds: 60));
+    final file =
+        await _picker.pickVideo(source: ImageSource.gallery, maxDuration: const Duration(seconds: 60));
     if (file == null) return;
     await _appendMedia(file, 'video');
   }
@@ -123,7 +124,7 @@ class ComposeController extends GetxController {
   Future<void> _appendMedia(XFile file, String mediaType) async {
     try {
       final bytes = await file.readAsBytes();
-      final mimeType = _guessMimeType(file.path, mediaType);
+      final mimeType = _guessMimeType(file.path, mediaType: mediaType);
       final dataUrl = 'data:$mimeType;base64,${base64Encode(bytes)}';
       mediaItems.add(
         ComposeMediaItem(
@@ -138,7 +139,7 @@ class ComposeController extends GetxController {
     }
   }
 
-  String _guessMimeType(String path, String mediaType) {
+  String _guessMimeType(String path, {required String mediaType}) {
     final lower = path.toLowerCase();
     if (mediaType == 'image') {
       if (lower.endsWith('.png')) return 'image/png';
@@ -146,9 +147,12 @@ class ComposeController extends GetxController {
       if (lower.endsWith('.gif')) return 'image/gif';
       return 'image/jpeg';
     }
+
     if (lower.endsWith('.mov')) return 'video/quicktime';
     if (lower.endsWith('.webm')) return 'video/webm';
     return 'video/mp4';
+  }
+
   Future<void> _restoreDraft() async {
     final prefs = await SharedPreferences.getInstance();
     final draft = prefs.getString(_draftStorageKey)?.trim();
