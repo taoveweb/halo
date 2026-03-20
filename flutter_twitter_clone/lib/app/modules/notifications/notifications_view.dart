@@ -18,7 +18,10 @@ class NotificationsView extends GetView<SocialController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('通知'),
+        title: Obx(() {
+          final cnt = controller.unreadNotificationCount.value;
+          return Text(cnt > 0 ? '通知 ($cnt)' : '通知');
+        }),
         actions: [
           IconButton(
             onPressed: () => controller.markAllNotificationsRead(),
@@ -60,7 +63,10 @@ class NotificationsView extends GetView<SocialController> {
                   itemBuilder: (context, index) {
                     final item = list[index];
                     return ListTile(
-                      onTap: () => controller.markNotificationRead(item),
+                      onTap: () async {
+                        await controller.markNotificationRead(item);
+                        await controller.openNotification(item);
+                      },
                       leading: Icon(
                         item.read
                             ? Icons.notifications_none

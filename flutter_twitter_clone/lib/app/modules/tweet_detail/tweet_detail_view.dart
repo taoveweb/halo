@@ -69,7 +69,10 @@ class TweetDetailView extends GetView<TweetDetailController> {
                         child: Text('还没有评论，来抢沙发吧。', style: TextStyle(color: Color(0xFF71767B))),
                       )
                     else
-                      ...controller.comments.map((item) => _CommentTile(comment: item)),
+                      ...controller.comments.map((item) {
+                        controller.commentKeys.putIfAbsent(item.id, () => GlobalKey());
+                        return _CommentTile(key: controller.commentKeys[item.id], comment: item);
+                      }),
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -122,7 +125,7 @@ class TweetDetailView extends GetView<TweetDetailController> {
 }
 
 class _CommentTile extends StatelessWidget {
-  const _CommentTile({required this.comment});
+  const _CommentTile({Key? key, required this.comment}) : super(key: key);
 
   final CommentModel comment;
 

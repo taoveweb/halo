@@ -211,32 +211,36 @@ export async function initDb() {
   `);
 
   const [existingTweets] = await pool.query('SELECT COUNT(*) AS count FROM tweets');
-  if (existing[0].count === 0 && existingTweets[0].count === 0) {
-    for (const template of seedTemplates) {
-      const createdAt = new Date(Date.now() - 1000 * 60 * template.minutesAgo);
+  // Only seed demo data when SEED_DATA=true is set in environment.
+  // Default behavior (production / development) is to NOT insert fake/demo data.
+  if (process.env.SEED_DATA === 'true') {
+    if (existing[0].count === 0 && existingTweets[0].count === 0) {
+      for (const template of seedTemplates) {
+        const createdAt = new Date(Date.now() - 1000 * 60 * template.minutesAgo);
 
-      const [tweetResult] = await pool.query(
-        `INSERT INTO tweets (author, handle, content, likes, comments, retweets, views, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          template.author,
-          template.handle,
-          template.content,
-          template.likes,
-          template.commentTemplates.length,
-          template.retweets,
-          template.views ?? 0,
-          createdAt
-        ]
-      );
-
-      for (const comment of template.commentTemplates) {
-        const commentTime = new Date(Date.now() - 1000 * 60 * comment.minutesAgo);
-        await pool.query(
-          `INSERT INTO comments (tweet_id, author, handle, content, created_at)
-           VALUES (?, ?, ?, ?, ?)`,
-          [tweetResult.insertId, comment.author, comment.handle, comment.content, commentTime]
+        const [tweetResult] = await pool.query(
+          `INSERT INTO tweets (author, handle, content, likes, comments, retweets, views, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            template.author,
+            template.handle,
+            template.content,
+            template.likes,
+            template.commentTemplates.length,
+            template.retweets,
+            template.views ?? 0,
+            createdAt
+          ]
         );
+
+        for (const comment of template.commentTemplates) {
+          const commentTime = new Date(Date.now() - 1000 * 60 * comment.minutesAgo);
+          await pool.query(
+            `INSERT INTO comments (tweet_id, author, handle, content, created_at)
+             VALUES (?, ?, ?, ?, ?)`,
+            [tweetResult.insertId, comment.author, comment.handle, comment.content, commentTime]
+          );
+        }
       }
     }
   }

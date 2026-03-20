@@ -5,6 +5,8 @@ import 'package:get/get.dart';
 import '../../data/models/comment_model.dart';
 import '../../data/models/tweet_model.dart';
 import '../../data/services/tweet_service.dart';
+import '../social/social_controller.dart';
+import 'package:flutter/widgets.dart';
 
 class TweetDetailController extends GetxController {
   TweetDetailController(this._tweetService);
@@ -13,6 +15,7 @@ class TweetDetailController extends GetxController {
 
   final Rxn<TweetModel> tweet = Rxn<TweetModel>();
   final RxList<CommentModel> comments = <CommentModel>[].obs;
+  final Map<String, GlobalKey> commentKeys = {};
   final TextEditingController commentInputController = TextEditingController();
   final RxBool isLoading = false.obs;
   final RxBool isPosting = false.obs;
@@ -31,9 +34,20 @@ class TweetDetailController extends GetxController {
       _refreshTweet();
       _recordView();
       loadComments();
+    } else if (args is Map) {
+      final t = args['tweet'];
+      if (t is TweetModel) {
+        tweet.value = t;
+        _refreshTweet();
+        _recordView();
+        _initialJumpCommentId = args['commentId']?.toString();
+        loadComments();
+      }
     }
     commentInputController.addListener(_handleCommentInputChanged);
   }
+
+  String? _initialJumpCommentId;
 
   Future<void> _recordView() async {
     final current = tweet.value;
@@ -71,11 +85,24 @@ class TweetDetailController extends GetxController {
       error.value = '';
       final result = await _tweetService.fetchComments(current.id);
       comments.assignAll(result);
+      if (_initialJumpCommentId != null && _initialJumpCommentId!.isNotEmpty) {
+        final id = _initialJumpCommentId!;
+        // delay to wait widget build
+        Future.delayed(const Duration(milliseconds: 120), () => scrollToComment(id));
+      }
     } catch (e) {
       error.value = e.toString();
     } finally {
       isLoading.value = false;
     }
+  }
+
+  void scrollToComment(String commentId) {
+    final key = commentKeys[commentId];
+    if (key == null) return;
+    final ctx = key.currentContext;
+    if (ctx == null) return;
+    Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 300), alignment: 0.1);
   }
 
   Future<void> toggleLike() async {
@@ -119,6 +146,15 @@ class TweetDetailController extends GetxController {
       commentInputController.clear();
       hasNewComment.value = true;
       tweet.value = current.copyWith(comments: current.comments + 1);
+      // refresh notifications immediately so recipient (including self) sees it
+      try {
+        if (Get.isRegistered<SocialController>()) {
+          final social = Get.find<SocialController>();
+          await social.loadNotifications();
+        }
+      } catch (_) {
+        // ignore
+      }
     } catch (e) {
       Get.snackbar('评论失败', e.toString(), snackPosition: SnackPosition.BOTTOM);
     } finally {

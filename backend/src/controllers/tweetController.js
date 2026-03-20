@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { pool } from '../db/mysql.js';
+import { pushNotificationToHandle } from './socialController.js';
 
 const DEFAULT_USER_HANDLE = '@you';
 const HASHTAG_PATTERN = /#[\p{L}\p{N}_]+/gu;
@@ -145,6 +146,13 @@ async function upsertTopicsByContent(content) {
       [title]
     );
   }
+}
+
+function extractMentionHandles(content) {
+  if (!content) return [];
+  const matches = content.match(/@[\w_]+/g) || [];
+  // normalize to include leading @
+  return [...new Set(matches.map((m) => m.trim()))];
 }
 
 async function persistTweetMedia({ tweetId, mediaItems, host }) {
@@ -394,6 +402,19 @@ export async function postTweet(req, res, next) {
       await upsertTopicsByContent(normalizedContent);
     }
 
+    // detect mentions in tweet content and notify mentioned handles
+    try {
+      const mentions = extractMentionHandles(normalizedContent);
+      for (const m of mentions) {
+        pushNotificationToHandle(m, {
+          title: `${normalizedAuthor} 提到了你`,
+          tweetId: String(result.insertId)
+        });
+      }
+    } catch (e) {
+      // ignore mention notify errors
+    }
+
     const [rows] = await pool.query(
       `SELECT t.*, 0 AS is_liked, 0 AS is_retweeted
        FROM tweets t
@@ -464,6 +485,31 @@ export async function postComment(req, res, next) {
     await pool.query('UPDATE tweets SET comments = comments + 1 WHERE id = ?', [req.params.id]);
 
     const [rows] = await pool.query('SELECT * FROM comments WHERE id = ? LIMIT 1', [result.insertId]);
+    // push notification to tweet owner and mentioned users
+    try {
+      const [tweetRows] = await pool.query('SELECT id, handle, author FROM tweets WHERE id = ? LIMIT 1', [req.params.id]);
+      if (tweetRows.length > 0) {
+        const tweetOwnerHandle = tweetRows[0].handle;
+        // notify tweet owner
+        pushNotificationToHandle(tweetOwnerHandle, {
+          title: `${normalizedAuthor} 评论了你的动态`,
+          tweetId: String(req.params.id),
+          commentId: String(result.insertId)
+        });
+      }
+
+      const mentions = extractMentionHandles(normalizedContent);
+      for (const m of mentions) {
+        // m already like '@someone'
+        pushNotificationToHandle(m, {
+          title: `${normalizedAuthor} 在评论中提到了你`,
+          tweetId: String(req.params.id),
+          commentId: String(result.insertId)
+        });
+      }
+    } catch (e) {
+      // ignore notification failure
+    }
     return res.status(201).json(rows.map(mapComment)[0]);
   } catch (error) {
     next(error);
@@ -530,6 +576,20 @@ export async function updateTweetInteraction(req, res, next) {
       [id]
     );
     tweet.media = mapMedia(mediaRows);
+
+    // push notification on like/retweet
+    try {
+      if (active === true) {
+        const [tweetRows] = await pool.query('SELECT id, handle, author FROM tweets WHERE id = ? LIMIT 1', [id]);
+        if (tweetRows.length > 0) {
+          const tweetOwnerHandle = tweetRows[0].handle;
+          const title = action === 'like' ? `${viewerHandle} 赞了你的动态` : `${viewerHandle} 转发了你的动态`;
+          pushNotificationToHandle(tweetOwnerHandle, { title, tweetId: String(id) });
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
 
     return res.status(200).json(tweet);
   } catch (error) {

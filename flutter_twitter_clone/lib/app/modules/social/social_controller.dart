@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:get/get.dart';
 
@@ -8,6 +9,10 @@ import '../../data/models/notification_model.dart';
 import '../../data/models/topic_model.dart';
 import '../../data/models/tweet_model.dart';
 import '../../data/services/tweet_service.dart';
+import '../../routes/app_routes.dart';
+import '../../core/constants/api_constants.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
+import '../auth/auth_controller.dart';
 
 class SocialController extends GetxController {
   SocialController(this._tweetService);
@@ -20,6 +25,7 @@ class SocialController extends GetxController {
   final RxBool topicCreating = false.obs;
 
   final RxList<NotificationModel> notifications = <NotificationModel>[].obs;
+  final RxInt unreadNotificationCount = 0.obs;
   final RxList<ChatModel> chats = <ChatModel>[].obs;
 
   final RxList<CommunityModel> communities = <CommunityModel>[].obs;
@@ -33,6 +39,12 @@ class SocialController extends GetxController {
   final RxString searchQuery = ''.obs;
   final RxInt selectedNotificationFilter = 0.obs;
   Timer? _searchDebounce;
+  Timer? _notificationPollTimer;
+  WebSocketChannel? _wsChannel;
+  StreamSubscription? _wsSub;
+  Timer? _reconnectTimer;
+  int _reconnectAttempts = 0;
+  final AuthController _auth = Get.find<AuthController>();
 
   @override
   void onInit() {
@@ -40,12 +52,91 @@ class SocialController extends GetxController {
     loadCommunities();
     loadNotifications();
     loadChats();
+    // poll notifications periodically so unread count updates in near real-time
+    _notificationPollTimer = Timer.periodic(const Duration(seconds: 15), (_) async {
+      await loadNotifications();
+    });
+    // attempt websocket connection for real-time notifications
+    _setupWebsocket();
+    // reconnect when user session changes
+    ever(_auth.currentUser, (_) {
+      _setupWebsocket();
+    });
+  }
+
+  void _setupWebsocket() {
+    _disconnectWebsocket();
+    _connectWebsocket();
+  }
+
+  void _connectWebsocket() {
+    final user = _auth.currentUser.value;
+    if (user == null || user.handle == null || user.handle!.isEmpty) return;
+    final handle = user.handle!;
+
+    try {
+      final api = Uri.parse(ApiConstants.baseUrl);
+      final wsScheme = api.scheme == 'https' ? 'wss' : 'ws';
+      final uri = Uri(scheme: wsScheme, host: api.host, port: api.hasPort ? api.port : null, path: '/ws/notifications', queryParameters: {'handle': handle});
+
+      _wsChannel = WebSocketChannel.connect(uri);
+      _wsSub = _wsChannel!.stream.listen(_onWsMessage, onDone: _onWsDone, onError: _onWsError, cancelOnError: true);
+      _reconnectAttempts = 0;
+    } catch (_) {
+      _scheduleReconnect();
+    }
+  }
+
+  void _disconnectWebsocket() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    _wsSub?.cancel();
+    _wsSub = null;
+    try {
+      _wsChannel?.sink.close();
+    } catch (_) {}
+    _wsChannel = null;
+  }
+
+  void _onWsMessage(dynamic raw) {
+    try {
+      final Map<String, dynamic> payload = jsonDecode(raw as String) as Map<String, dynamic>;
+      if (payload['type'] == 'notification' && payload['notification'] != null) {
+        final notif = payload['notification'] as Map<String, dynamic>;
+        final model = NotificationModel.fromJson(notif);
+        final exists = notifications.any((n) => n.id == model.id);
+        if (!exists) {
+          notifications.insert(0, model);
+          if (!model.read) unreadNotificationCount.value = unreadNotificationCount.value + 1;
+        }
+      }
+    } catch (_) {
+      // ignore malformed messages
+    }
+  }
+
+  void _onWsDone() {
+    _scheduleReconnect();
+  }
+
+  void _onWsError(error) {
+    _scheduleReconnect();
+  }
+
+  void _scheduleReconnect() {
+    _reconnectAttempts += 1;
+    final delay = Duration(seconds: (_reconnectAttempts * 2).clamp(2, 30));
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(delay, () {
+      _connectWebsocket();
+    });
   }
 
   Future<void> loadNotifications() async {
     try {
       final items = await _tweetService.fetchNotifications();
       notifications.assignAll(items);
+      unreadNotificationCount.value = notifications.where((n) => !n.read).length;
     } catch (_) {
       // 忽略加载失败，保留当前数据
     }
@@ -190,16 +281,72 @@ class SocialController extends GetxController {
   }
 
   Future<void> markNotificationRead(NotificationModel item) async {
-    final updated = await _tweetService.markNotificationRead(item.id);
     final index = notifications.indexWhere((notification) => notification.id == item.id);
-    if (index != -1) {
-      notifications[index] = updated;
+    try {
+      final updated = await _tweetService.markNotificationRead(item.id);
+      if (index != -1) {
+        notifications[index] = updated;
+      }
+    } catch (_) {
+      // fallback: mark local copy as read so UI updates immediately
+      if (index != -1) {
+        final copy = notifications[index];
+        notifications[index] = NotificationModel(
+          id: copy.id,
+          title: copy.title,
+          minutesAgo: copy.minutesAgo,
+          read: true,
+          tweetId: copy.tweetId,
+          commentId: copy.commentId,
+        );
+      }
+    } finally {
+      unreadNotificationCount.value = notifications.where((n) => !n.read).length;
     }
   }
 
   Future<void> markAllNotificationsRead() async {
     final updated = await _tweetService.markAllNotificationsRead();
     notifications.assignAll(updated);
+    unreadNotificationCount.value = notifications.where((n) => !n.read).length;
+  }
+
+  Future<void> openNotification(NotificationModel item) async {
+    final index = notifications.indexWhere((notification) => notification.id == item.id);
+    NotificationModel? updated;
+    try {
+      updated = await _tweetService.markNotificationRead(item.id);
+      if (index != -1 && updated != null) {
+        notifications[index] = updated;
+      }
+    } catch (_) {
+      // fallback local mark as read
+      if (index != -1) {
+        final copy = notifications[index];
+        notifications[index] = NotificationModel(
+          id: copy.id,
+          title: copy.title,
+          minutesAgo: copy.minutesAgo,
+          read: true,
+          tweetId: copy.tweetId,
+          commentId: copy.commentId,
+        );
+        updated = notifications[index];
+      }
+    } finally {
+      unreadNotificationCount.value = notifications.where((n) => !n.read).length;
+    }
+
+    final targetTweetId = updated?.tweetId;
+    final targetCommentId = updated?.commentId;
+    if (targetTweetId != null && targetTweetId.isNotEmpty) {
+      try {
+        final tweet = await _tweetService.fetchTweetById(targetTweetId);
+        Get.toNamed(AppRoutes.tweetDetail, arguments: {'tweet': tweet, 'commentId': targetCommentId});
+      } catch (_) {
+        // ignore navigation failure
+      }
+    }
   }
 
   Future<void> openChat(ChatModel item) async {
@@ -238,6 +385,8 @@ class SocialController extends GetxController {
   @override
   void onClose() {
     _searchDebounce?.cancel();
+    _notificationPollTimer?.cancel();
+    _disconnectWebsocket();
     super.onClose();
   }
 }

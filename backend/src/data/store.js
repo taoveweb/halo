@@ -111,19 +111,9 @@ const seedTemplates = [
   }
 ];
 
-const seedTweets = seedTemplates.map((template) => ({
-  id: nanoid(),
-  author: template.author,
-  handle: template.handle,
-  content: template.content,
-  createdAt: new Date(Date.now() - 1000 * 60 * template.minutesAgo).toISOString(),
-  likes: template.likes,
-  comments: template.comments,
-  retweets: template.retweets
-}));
-
+// Do not populate in-memory DB with demo tweets by default.
 export const db = {
-  tweets: [...seedTweets]
+  tweets: []
 };
 
 export function createTweet(content, author = 'You', handle = '@you') {

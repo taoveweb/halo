@@ -16,6 +16,8 @@ import socialRoutes from './routes/socialRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+import http from 'http';
+import { initNotificationSocket } from './ws/notificationSocket.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -38,9 +40,18 @@ app.use(errorHandler);
 
 initDb()
   .then(() => {
-    app.listen(PORT, () => {
+    const server = http.createServer(app);
+    server.listen(PORT, () => {
       console.log(`Backend running on http://localhost:${PORT}`);
     });
+
+    // initialize websocket notification socket
+    try {
+      initNotificationSocket(server, { path: '/ws/notifications' });
+      console.log('WebSocket notification socket initialized at /ws/notifications');
+    } catch (e) {
+      console.error('Failed to init notification socket:', e);
+    }
   })
   .catch((error) => {
     console.error('Failed to initialize database:', error);
