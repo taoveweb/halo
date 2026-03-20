@@ -130,6 +130,7 @@ export async function getAdminDashboard(req, res, next) {
     const [[userCountRow]] = await pool.query('SELECT COUNT(*) AS count FROM users');
     const [[tweetCountRow]] = await pool.query('SELECT COUNT(*) AS count FROM tweets');
     const [[commentCountRow]] = await pool.query('SELECT COUNT(*) AS count FROM comments');
+    const [[topicCountRow]] = await pool.query('SELECT COUNT(*) AS count FROM topics');
 
     const [[newUsersTodayRow]] = await pool.query(
       'SELECT COUNT(*) AS count FROM users WHERE DATE(created_at) = CURRENT_DATE()'
@@ -152,7 +153,8 @@ export async function getAdminDashboard(req, res, next) {
       counts: {
         users: userCountRow.count,
         tweets: tweetCountRow.count,
-        comments: commentCountRow.count
+        comments: commentCountRow.count,
+        topics: topicCountRow.count
       },
       daily: {
         users: newUsersTodayRow.count,
@@ -160,6 +162,39 @@ export async function getAdminDashboard(req, res, next) {
         comments: commentsTodayRow.count
       },
       recentTweets
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function getAdminTopics(req, res, next) {
+  try {
+    const page = Math.max(Number.parseInt(req.query.page ?? '1', 10), 1);
+    const pageSize = Math.min(Math.max(Number.parseInt(req.query.pageSize ?? '10', 10), 1), 50);
+    const keyword = req.query.keyword?.trim() || '';
+
+    const whereClause = keyword ? 'WHERE title LIKE ?' : '';
+    const params = keyword ? [`%${keyword}%`] : [];
+
+    const [[countRow]] = await pool.query(`SELECT COUNT(*) AS count FROM topics ${whereClause}`, params);
+
+    const [rows] = await pool.query(
+      `SELECT id, title, posts, created_at AS createdAt
+       FROM topics
+       ${whereClause}
+       ORDER BY posts DESC, created_at DESC
+       LIMIT ? OFFSET ?`,
+      [...params, pageSize, (page - 1) * pageSize]
+    );
+
+    return res.status(200).json({
+      list: rows,
+      pagination: {
+        page,
+        pageSize,
+        total: countRow.count
+      }
     });
   } catch (error) {
     return next(error);
@@ -267,6 +302,38 @@ export async function getAdminComments(req, res, next) {
   }
 }
 
+export async function getAdminTweetComments(req, res, next) {
+  try {
+    const { id } = req.params;
+    const [[tweetRow]] = await pool.query(
+      'SELECT id, content FROM tweets WHERE id = ? LIMIT 1',
+      [id]
+    );
+
+    if (!tweetRow) {
+      return res.status(404).json({ message: 'tweet not found' });
+    }
+
+    const [rows] = await pool.query(
+      `SELECT id, tweet_id AS tweetId, author, handle, content, created_at AS createdAt
+       FROM comments
+       WHERE tweet_id = ?
+       ORDER BY created_at DESC, id DESC`,
+      [id]
+    );
+
+    return res.status(200).json({
+      tweet: {
+        id: tweetRow.id,
+        content: tweetRow.content
+      },
+      list: rows
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 export async function deleteAdminTweet(req, res, next) {
   try {
     const { id } = req.params;
@@ -293,6 +360,22 @@ export async function deleteAdminComment(req, res, next) {
     }
 
     await writeAdminAuditLog('delete', 'comment', id, 'comment deleted by admin', req.adminUser.username);
+    return res.status(204).send();
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function deleteAdminTopic(req, res, next) {
+  try {
+    const { id } = req.params;
+    const [result] = await pool.query('DELETE FROM topics WHERE id = ? LIMIT 1', [id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'topic not found' });
+    }
+
+    await writeAdminAuditLog('delete', 'topic', id, 'topic deleted by admin', req.adminUser.username);
     return res.status(204).send();
   } catch (error) {
     return next(error);
