@@ -61,6 +61,15 @@ class HomeController extends GetxController {
     tweets.removeWhere((item) => item.id == tweet.id);
   }
 
+  Future<void> recordTweetView(TweetModel tweet) async {
+    try {
+      final updated = await _tweetService.recordTweetView(tweet.id);
+      _replaceTweet(updated);
+    } catch (_) {
+      // 记录浏览失败不影响用户体验
+    }
+  }
+
   void _replaceTweet(TweetModel updated) {
     final index = tweets.indexWhere((item) => item.id == updated.id);
     if (index != -1) {

@@ -29,9 +29,20 @@ class TweetDetailController extends GetxController {
     if (args is TweetModel) {
       tweet.value = args;
       _refreshTweet();
+      _recordView();
       loadComments();
     }
     commentInputController.addListener(_handleCommentInputChanged);
+  }
+
+  Future<void> _recordView() async {
+    final current = tweet.value;
+    if (current == null) return;
+    try {
+      await _tweetService.recordTweetView(current.id);
+    } catch (_) {
+      // 记录浏览失败不影响用户体验
+    }
   }
 
   Future<void> _refreshTweet() async {

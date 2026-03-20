@@ -71,6 +71,7 @@ class HomeView extends GetView<HomeController> {
                         onEdit: () => _showEditDialog(context, tweet),
                         onDelete: () => _confirmDelete(tweet),
                         onComment: () async {
+                          controller.recordTweetView(tweet);
                           final updated = await Get.toNamed(AppRoutes.tweetDetail, arguments: tweet);
                           if (updated == true) {
                             controller.loadTimeline();
@@ -82,6 +83,7 @@ class HomeView extends GetView<HomeController> {
                           Get.snackbar('已复制', '动态内容已复制到剪贴板', snackPosition: SnackPosition.BOTTOM);
                         },
                         onTap: () async {
+                          controller.recordTweetView(tweet);
                           final updated = await Get.toNamed(AppRoutes.tweetDetail, arguments: tweet);
                           if (updated == true) {
                             controller.loadTimeline();

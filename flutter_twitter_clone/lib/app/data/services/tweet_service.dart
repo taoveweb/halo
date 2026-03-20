@@ -88,4 +88,9 @@ class TweetService {
     final data = await _provider.updateCommunityJoin(communityId: communityId, active: active);
     return CommunityModel.fromJson(data);
   }
+
+  Future<TweetModel> recordTweetView(String tweetId) async {
+    final data = await _provider.recordTweetView(tweetId);
+    return TweetModel.fromJson(data);
+  }
 }

@@ -204,4 +204,18 @@ class TweetProvider {
 
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
+
+  Future<Map<String, dynamic>> recordTweetView(String tweetId) async {
+    final response = await _client.post(
+      Uri.parse('${ApiConstants.baseUrl}/tweets/$tweetId/view'),
+      headers: _jsonHeaders(),
+      body: jsonEncode({}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('记录浏览失败: ${response.body}');
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
 }
