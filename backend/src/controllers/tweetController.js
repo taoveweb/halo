@@ -257,7 +257,6 @@ export async function getTweets(req, res, next) {
 export async function getTweetById(req, res, next) {
   try {
     const viewerHandle = req.authUser?.handle || req.query.viewerHandle?.trim() || DEFAULT_USER_HANDLE;
-    await pool.query('UPDATE tweets SET views = views + 1 WHERE id = ?', [req.params.id]);
     const [rows] = await pool.query(
       `SELECT
          t.*,
@@ -275,6 +274,45 @@ export async function getTweetById(req, res, next) {
     if (rows.length === 0) {
       return res.status(404).json({ message: 'Tweet not found' });
     }
+
+    const tweet = mapTweet(rows[0]);
+    const [mediaRows] = await pool.query(
+      `SELECT id, media_type, media_url, mime_type, sort_order
+       FROM tweet_media
+       WHERE tweet_id = ?
+       ORDER BY sort_order ASC, id ASC`,
+      [req.params.id]
+    );
+
+    tweet.media = mapMedia(mediaRows);
+    return res.status(200).json(tweet);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function recordTweetView(req, res, next) {
+  try {
+    const viewerHandle = req.authUser?.handle || req.query.viewerHandle?.trim() || DEFAULT_USER_HANDLE;
+    const [updateResult] = await pool.query('UPDATE tweets SET views = views + 1 WHERE id = ?', [req.params.id]);
+
+    if (!updateResult.affectedRows) {
+      return res.status(404).json({ message: 'Tweet not found' });
+    }
+
+    const [rows] = await pool.query(
+      `SELECT
+         t.*,
+         COALESCE(ti.liked, 0) AS is_liked,
+         COALESCE(ti.retweeted, 0) AS is_retweeted
+       FROM tweets t
+       LEFT JOIN tweet_interactions ti
+         ON ti.tweet_id = t.id
+        AND ti.user_handle = ?
+       WHERE t.id = ?
+       LIMIT 1`,
+      [viewerHandle, req.params.id]
+    );
 
     const tweet = mapTweet(rows[0]);
     const [mediaRows] = await pool.query(

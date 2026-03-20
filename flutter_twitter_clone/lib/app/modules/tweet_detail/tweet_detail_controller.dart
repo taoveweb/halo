@@ -39,7 +39,8 @@ class TweetDetailController extends GetxController {
     final current = tweet.value;
     if (current == null) return;
     try {
-      await _tweetService.recordTweetView(current.id);
+      final updated = await _tweetService.recordTweetView(current.id);
+      tweet.value = updated;
     } catch (_) {
       // 记录浏览失败不影响用户体验
     }
