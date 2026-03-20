@@ -32,7 +32,7 @@ function mapTweet(row) {
     likes: row.likes,
     comments: row.comments,
     retweets: row.retweets,
-    views: row.views,
+    views: Number.isFinite(row.views) ? row.views : 0,
     isLiked: Boolean(row.is_liked),
     isRetweeted: Boolean(row.is_retweeted),
     media: []
@@ -294,11 +294,19 @@ export async function getTweetById(req, res, next) {
 export async function recordTweetView(req, res, next) {
   try {
     const viewerHandle = req.authUser?.handle || req.query.viewerHandle?.trim() || DEFAULT_USER_HANDLE;
-    const [updateResult] = await pool.query('UPDATE tweets SET views = views + 1 WHERE id = ?', [req.params.id]);
+    let tweetExists = false;
+    try {
+      const [updateResult] = await pool.query('UPDATE tweets SET views = views + 1 WHERE id = ?', [req.params.id]);
+      tweetExists = updateResult.affectedRows > 0;
+    } catch (error) {
+      if (error?.code !== 'ER_BAD_FIELD_ERROR') {
+        throw error;
+      }
 
-    if (!updateResult.affectedRows) {
-      return res.status(404).json({ message: 'Tweet not found' });
+      const [rows] = await pool.query('SELECT id FROM tweets WHERE id = ? LIMIT 1', [req.params.id]);
+      tweetExists = rows.length > 0;
     }
+    if (!tweetExists) return res.status(404).json({ message: 'Tweet not found' });
 
     const [rows] = await pool.query(
       `SELECT
