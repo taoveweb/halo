@@ -64,7 +64,7 @@ class NotificationsView extends GetView<SocialController> {
                     final item = list[index];
                     return ListTile(
                       onTap: () async {
-                        await controller.markNotificationRead(item);
+                        // await controller.markNotificationRead(item);
                         await controller.openNotification(item);
                       },
                       leading: Icon(
