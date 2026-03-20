@@ -41,6 +41,9 @@ class TweetDetailController extends GetxController {
     try {
       final updated = await _tweetService.recordTweetView(current.id);
       tweet.value = updated;
+      if (updated.views != current.views) {
+        hasNewComment.value = true;
+      }
     } catch (_) {
       // 记录浏览失败不影响用户体验
     }
