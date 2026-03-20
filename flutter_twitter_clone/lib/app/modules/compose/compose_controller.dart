@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/services/tweet_service.dart';
 
@@ -7,6 +8,7 @@ class ComposeController extends GetxController {
   ComposeController(this._tweetService);
 
   static const int maxLength = 280;
+  static const String _draftStorageKey = 'compose_draft_content';
 
   final TweetService _tweetService;
   final TextEditingController textController = TextEditingController();
@@ -22,6 +24,7 @@ class ComposeController extends GetxController {
   void onInit() {
     super.onInit();
     textController.addListener(_handleTextChanged);
+    _restoreDraft();
   }
 
   void _handleTextChanged() {
@@ -53,8 +56,36 @@ class ComposeController extends GetxController {
     return shouldLeave;
   }
 
-  void saveDraft() {
+  Future<void> saveDraft() async {
+    final draft = textController.text.trim();
+    final prefs = await SharedPreferences.getInstance();
+
+    if (draft.isEmpty) {
+      await prefs.remove(_draftStorageKey);
+      Get.snackbar('草稿', '内容为空，已清空草稿');
+      return;
+    }
+
+    await prefs.setString(_draftStorageKey, draft);
     Get.snackbar('草稿', '已保存到草稿箱');
+  }
+
+  Future<void> _restoreDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    final draft = prefs.getString(_draftStorageKey)?.trim();
+
+    if (draft == null || draft.isEmpty) {
+      return;
+    }
+
+    textController.text = draft;
+    textController.selection = TextSelection.collapsed(offset: draft.length);
+    _handleTextChanged();
+  }
+
+  Future<void> _clearDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_draftStorageKey);
   }
 
   Future<void> submitTweet() async {
@@ -72,6 +103,7 @@ class ComposeController extends GetxController {
     try {
       isPosting.value = true;
       await _tweetService.createTweet(content);
+      await _clearDraft();
       Get.back(result: true);
       Get.snackbar('成功', '动态已发布');
       textController.clear();
