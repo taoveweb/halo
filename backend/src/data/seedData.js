@@ -6,6 +6,7 @@ export const seedTemplates = [
     likes: 28,
     comments: 6,
     retweets: 4,
+    views: 912,
     minutesAgo: 42,
     commentTemplates: [
       { author: '产品经理小王', handle: '@pm_wang', content: '开场就很完整，点赞！', minutesAgo: 38 },
@@ -19,6 +20,7 @@ export const seedTemplates = [
     likes: 15,
     comments: 3,
     retweets: 2,
+    views: 605,
     minutesAgo: 35,
     commentTemplates: [
       { author: 'Leo', handle: '@leo_frontend', content: '滚动反馈做得真好。', minutesAgo: 29 }
@@ -31,6 +33,7 @@ export const seedTemplates = [
     likes: 19,
     comments: 4,
     retweets: 3,
+    views: 733,
     minutesAgo: 30,
     commentTemplates: [
       { author: 'API 观察员', handle: '@api_watch', content: '再加一个 comments 接口就更完整了。', minutesAgo: 25 }
@@ -43,6 +46,7 @@ export const seedTemplates = [
     likes: 33,
     comments: 8,
     retweets: 5,
+    views: 1042,
     minutesAgo: 26,
     commentTemplates: []
   },
@@ -53,6 +57,7 @@ export const seedTemplates = [
     likes: 24,
     comments: 5,
     retweets: 2,
+    views: 589,
     minutesAgo: 23,
     commentTemplates: []
   },
@@ -63,6 +68,7 @@ export const seedTemplates = [
     likes: 41,
     comments: 7,
     retweets: 9,
+    views: 1401,
     minutesAgo: 20,
     commentTemplates: [
       { author: '开源爱好者', handle: '@opensource_fan', content: '已经 star 了。', minutesAgo: 17 }
@@ -75,6 +81,7 @@ export const seedTemplates = [
     likes: 57,
     comments: 18,
     retweets: 11,
+    views: 1683,
     minutesAgo: 18,
     commentTemplates: [
       { author: 'Riverpod 用户', handle: '@riverpod_user', content: '我这边主要用 Riverpod。', minutesAgo: 15 },
@@ -88,6 +95,7 @@ export const seedTemplates = [
     likes: 22,
     comments: 2,
     retweets: 1,
+    views: 477,
     minutesAgo: 15,
     commentTemplates: [
       { author: '后端同学', handle: '@node_backend', content: '上线前记得切数据库。', minutesAgo: 11 }
@@ -100,6 +108,7 @@ export const seedTemplates = [
     likes: 12,
     comments: 9,
     retweets: 0,
+    views: 312,
     minutesAgo: 12,
     commentTemplates: []
   },
@@ -110,6 +119,7 @@ export const seedTemplates = [
     likes: 49,
     comments: 10,
     retweets: 8,
+    views: 1330,
     minutesAgo: 9,
     commentTemplates: []
   },
@@ -120,6 +130,7 @@ export const seedTemplates = [
     likes: 31,
     comments: 6,
     retweets: 6,
+    views: 926,
     minutesAgo: 6,
     commentTemplates: []
   },
@@ -130,6 +141,7 @@ export const seedTemplates = [
     likes: 5,
     comments: 1,
     retweets: 0,
+    views: 188,
     minutesAgo: 3,
     commentTemplates: [
       { author: 'Alice', handle: '@alice_dev', content: '加油，离产品化更近一步了！', minutesAgo: 1 }

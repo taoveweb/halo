@@ -70,10 +70,20 @@ export async function initDb() {
       likes INT NOT NULL DEFAULT 0,
       comments INT NOT NULL DEFAULT 0,
       retweets INT NOT NULL DEFAULT 0,
+      views INT NOT NULL DEFAULT 0,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `);
+
+  const [tweetViewsColRows] = await pool.query(
+    `SELECT COUNT(*) AS count FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+    [process.env.MYSQL_DATABASE, 'tweets', 'views']
+  );
+
+  if (tweetViewsColRows[0].count === 0) {
+    await pool.query('ALTER TABLE tweets ADD COLUMN views INT NOT NULL DEFAULT 0 AFTER retweets');
+  }
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS comments (
@@ -177,8 +187,8 @@ export async function initDb() {
       const createdAt = new Date(Date.now() - 1000 * 60 * template.minutesAgo);
 
       const [tweetResult] = await pool.query(
-        `INSERT INTO tweets (author, handle, content, likes, comments, retweets, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO tweets (author, handle, content, likes, comments, retweets, views, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           template.author,
           template.handle,
@@ -186,6 +196,7 @@ export async function initDb() {
           template.likes,
           template.commentTemplates.length,
           template.retweets,
+          template.views ?? 0,
           createdAt
         ]
       );

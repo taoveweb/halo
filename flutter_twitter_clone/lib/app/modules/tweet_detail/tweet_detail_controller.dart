@@ -28,9 +28,19 @@ class TweetDetailController extends GetxController {
     final args = Get.arguments;
     if (args is TweetModel) {
       tweet.value = args;
+      _refreshTweet();
       loadComments();
     }
     commentInputController.addListener(_handleCommentInputChanged);
+  }
+
+  Future<void> _refreshTweet() async {
+    final current = tweet.value;
+    if (current == null) return;
+    try {
+      final latest = await _tweetService.fetchTweetById(current.id);
+      tweet.value = latest;
+    } catch (_) {}
   }
 
   void _handleCommentInputChanged() {

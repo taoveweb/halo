@@ -7,6 +7,8 @@ import {
   getTweets,
   postComment,
   postTweet,
+  removeTweet,
+  updateTweet,
   updateTweetInteraction
 } from '../controllers/tweetController.js';
 import { optionalAuth, requireAuth } from '../middleware/auth.js';
@@ -23,6 +25,8 @@ router.post('/auth/logout', requireAuth, logout);
 router.get('/tweets', optionalAuth, getTweets);
 router.get('/tweets/:id', optionalAuth, getTweetById);
 router.post('/tweets', requireAuth, postTweet);
+router.patch('/tweets/:id', requireAuth, updateTweet);
+router.delete('/tweets/:id', requireAuth, removeTweet);
 router.get('/tweets/:id/comments', getCommentsByTweetId);
 router.post('/tweets/:id/comments', requireAuth, postComment);
 router.post('/tweets/:id/:action', requireAuth, updateTweetInteraction);
