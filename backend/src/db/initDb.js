@@ -76,6 +76,16 @@ export async function initDb() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `);
 
+  // Backfill for older databases created before `views` column existed.
+  const [tweetViewsColRows] = await pool.query(
+    `SELECT COUNT(*) AS count FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+    [process.env.MYSQL_DATABASE, 'tweets', 'views']
+  );
+
+  if (tweetViewsColRows[0].count === 0) {
+    await pool.query(`ALTER TABLE tweets ADD COLUMN views INT NOT NULL DEFAULT 0 AFTER retweets`);
+  }
+
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS tweet_media (
