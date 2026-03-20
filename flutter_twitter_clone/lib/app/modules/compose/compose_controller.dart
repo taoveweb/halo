@@ -53,6 +53,10 @@ class ComposeController extends GetxController {
     return shouldLeave;
   }
 
+  void saveDraft() {
+    Get.snackbar('草稿', '已保存到草稿箱');
+  }
+
   Future<void> submitTweet() async {
     final content = textController.text.trim();
     if (content.isEmpty) {
