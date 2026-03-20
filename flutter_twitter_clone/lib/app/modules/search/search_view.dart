@@ -56,10 +56,10 @@ class _SearchViewState extends State<SearchView> {
               () => TextField(
                 controller: _searchTextController,
                 onChanged: controller.setSearchQuery,
-                onSubmitted: (_) => controller.loadSearchTweets(),
+                onSubmitted: (_) => controller.search(),
                 textInputAction: TextInputAction.search,
                 decoration: InputDecoration(
-                  hintText: '搜索推文内容',
+                  hintText: '搜索话题或推文内容',
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon: controller.searchQuery.value.isEmpty
                       ? null
@@ -99,7 +99,7 @@ class _SearchViewState extends State<SearchView> {
                           const Text('搜索失败，请检查网络后重试'),
                           const SizedBox(height: 12),
                           FilledButton(
-                            onPressed: controller.loadSearchTweets,
+                            onPressed: controller.search,
                             child: const Text('重试'),
                           ),
                         ],
@@ -107,33 +107,70 @@ class _SearchViewState extends State<SearchView> {
                     ),
                   );
                 }
-                if (controller.searchTweets.isEmpty) {
+                final hasQuery = controller.searchQuery.value.trim().isNotEmpty;
+                if (!hasQuery) {
                   return Center(
                     child: Text(
-                      controller.searchQuery.value.trim().isEmpty
-                          ? '输入关键词搜索推文内容'
-                          : '没有找到相关推文，换个关键词试试',
+                      '输入关键词搜索话题或推文内容',
                       style: const TextStyle(color: Color(0xFF71767B)),
+                    ),
+                  );
+                }
+                if (controller.searchTweets.isEmpty && controller.topics.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      '没有找到相关话题或推文，换个关键词试试',
+                      style: TextStyle(color: Color(0xFF71767B)),
                     ),
                   );
                 }
 
                 return RefreshIndicator(
                   onRefresh: controller.refreshAll,
-                  child: ListView.builder(
-                    itemCount: controller.searchTweets.length,
-                    itemBuilder: (context, index) {
-                      final tweet = controller.searchTweets[index];
-                      return TweetCard(
-                        tweet: tweet,
-                        onTap: () => Get.toNamed(AppRoutes.tweetDetail, arguments: tweet),
-                        onShare: () async {
-                          final text = '${tweet.author} ${tweet.handle}\n${tweet.content}';
-                          await Clipboard.setData(ClipboardData(text: text));
-                          Get.snackbar('已复制', '动态内容已复制到剪贴板', snackPosition: SnackPosition.BOTTOM);
-                        },
-                      );
-                    },
+                  child: ListView(
+                    children: [
+                      if (controller.topics.isNotEmpty) ...[
+                        const Padding(
+                          padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
+                          child: Text(
+                            '话题',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        ...controller.topics.map(
+                          (topic) => ListTile(
+                            leading: const Icon(Icons.tag, color: Color(0xFF71767B)),
+                            title: Text(topic.title),
+                            subtitle: Text('${topic.posts} 条动态'),
+                            trailing: FilledButton.tonal(
+                              onPressed: () => controller.toggleTopicFollow(topic),
+                              child: Text(topic.following ? '已关注' : '关注'),
+                            ),
+                          ),
+                        ),
+                        const Divider(height: 1, color: Color(0xFF2F3336)),
+                      ],
+                      if (controller.searchTweets.isNotEmpty) ...[
+                        const Padding(
+                          padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
+                          child: Text(
+                            '推文',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        ...controller.searchTweets.map((tweet) {
+                          return TweetCard(
+                            tweet: tweet,
+                            onTap: () => Get.toNamed(AppRoutes.tweetDetail, arguments: tweet),
+                            onShare: () async {
+                              final text = '${tweet.author} ${tweet.handle}\n${tweet.content}';
+                              await Clipboard.setData(ClipboardData(text: text));
+                              Get.snackbar('已复制', '动态内容已复制到剪贴板', snackPosition: SnackPosition.BOTTOM);
+                            },
+                          );
+                        }),
+                      ],
+                    ],
                   ),
                 );
               },
