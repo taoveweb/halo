@@ -26,7 +26,7 @@ class TweetProvider {
       queryParams['query'] = query.trim();
     }
     final uri = Uri.parse('${ApiConstants.baseUrl}/tweets').replace(queryParameters: queryParams);
-    final response = await _client.get(uri);
+    final response = await _client.get(uri, headers: _jsonHeaders());
 
     if (response.statusCode != 200) {
       throw Exception('加载动态失败: ${response.body}');
@@ -56,7 +56,7 @@ class TweetProvider {
   }) async {
     final response = await _client.post(
       Uri.parse('${ApiConstants.baseUrl}/tweets/$tweetId/$action'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _jsonHeaders(),
       body: jsonEncode({'active': active}),
     );
 
@@ -93,7 +93,8 @@ class TweetProvider {
 
   Future<List<dynamic>> fetchTopics({String? query}) async {
     final encodedQuery = query == null || query.isEmpty ? '' : '?query=${Uri.encodeQueryComponent(query)}';
-    final response = await _client.get(Uri.parse('${ApiConstants.baseUrl}/topics$encodedQuery'));
+    final response =
+        await _client.get(Uri.parse('${ApiConstants.baseUrl}/topics$encodedQuery'), headers: _jsonHeaders());
 
     if (response.statusCode != 200) {
       throw Exception('加载话题失败: ${response.body}');
@@ -105,7 +106,7 @@ class TweetProvider {
   Future<Map<String, dynamic>> updateTopicFollow({required String topicId, required bool active}) async {
     final response = await _client.post(
       Uri.parse('${ApiConstants.baseUrl}/topics/$topicId/follow'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _jsonHeaders(),
       body: jsonEncode({'active': active}),
     );
 
@@ -119,7 +120,7 @@ class TweetProvider {
   Future<Map<String, dynamic>> createTopic({required String title}) async {
     final response = await _client.post(
       Uri.parse('${ApiConstants.baseUrl}/topics'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _jsonHeaders(),
       body: jsonEncode({'title': title}),
     );
 
@@ -131,7 +132,10 @@ class TweetProvider {
   }
 
   Future<List<dynamic>> fetchCommunities() async {
-    final response = await _client.get(Uri.parse('${ApiConstants.baseUrl}/communities'));
+    final response = await _client.get(
+      Uri.parse('${ApiConstants.baseUrl}/communities'),
+      headers: _jsonHeaders(),
+    );
 
     if (response.statusCode != 200) {
       throw Exception('加载社群失败: ${response.body}');
@@ -146,7 +150,7 @@ class TweetProvider {
   }) async {
     final response = await _client.post(
       Uri.parse('${ApiConstants.baseUrl}/communities/$communityId/join'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _jsonHeaders(),
       body: jsonEncode({'active': active}),
     );
 

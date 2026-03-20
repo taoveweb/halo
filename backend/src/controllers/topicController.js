@@ -22,6 +22,7 @@ function mapTopic(row) {
 
 export async function getTopics(req, res, next) {
   try {
+    const viewerHandle = req.authUser?.handle || DEFAULT_USER_HANDLE;
     const query = req.query.query?.trim();
     const [rows] = await pool.query(
       `SELECT
@@ -33,7 +34,7 @@ export async function getTopics(req, res, next) {
         AND utf.user_handle = ?
        WHERE (? IS NULL OR t.title LIKE CONCAT('%', ?, '%'))
        ORDER BY t.posts DESC, t.id ASC`,
-      [DEFAULT_USER_HANDLE, query ?? null, query ?? null]
+      [viewerHandle, query ?? null, query ?? null]
     );
 
     return res.status(200).json(rows.map(mapTopic));
@@ -44,6 +45,7 @@ export async function getTopics(req, res, next) {
 
 export async function createTopic(req, res, next) {
   try {
+    const viewerHandle = req.authUser?.handle || DEFAULT_USER_HANDLE;
     const rawTitle = req.body.title;
     if (typeof rawTitle !== 'string' || !rawTitle.trim()) {
       return res.status(400).json({ message: 'title is required' });
@@ -73,7 +75,7 @@ export async function createTopic(req, res, next) {
         AND utf.user_handle = ?
        WHERE t.title = ?
        LIMIT 1`,
-      [DEFAULT_USER_HANDLE, normalizedTitle]
+      [viewerHandle, normalizedTitle]
     );
 
     return res.status(201).json(mapTopic(rows[0]));
@@ -84,6 +86,7 @@ export async function createTopic(req, res, next) {
 
 export async function updateTopicFollow(req, res, next) {
   try {
+    const viewerHandle = req.authUser?.handle || DEFAULT_USER_HANDLE;
     const topicId = req.params.id;
     const active = parseBool(req.body.active);
     if (active === null) {
@@ -99,11 +102,11 @@ export async function updateTopicFollow(req, res, next) {
       await pool.query(
         `INSERT IGNORE INTO user_topic_follows (user_handle, topic_id)
          VALUES (?, ?)`,
-        [DEFAULT_USER_HANDLE, topicId]
+        [viewerHandle, topicId]
       );
     } else {
       await pool.query('DELETE FROM user_topic_follows WHERE user_handle = ? AND topic_id = ?', [
-        DEFAULT_USER_HANDLE,
+        viewerHandle,
         topicId
       ]);
     }
@@ -118,7 +121,7 @@ export async function updateTopicFollow(req, res, next) {
         AND utf.user_handle = ?
        WHERE t.id = ?
        LIMIT 1`,
-      [DEFAULT_USER_HANDLE, topicId]
+      [viewerHandle, topicId]
     );
 
     return res.status(200).json(mapTopic(topicRows[0]));
