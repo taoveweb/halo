@@ -70,6 +70,7 @@ class SocialController extends GetxController {
   }
 
   void _connectWebsocket() {
+    print('object-----');
     final user = _auth.currentUser.value;
     if (user == null || user.handle == null || user.handle!.isEmpty) return;
     final handle = user.handle!;
@@ -100,6 +101,7 @@ class SocialController extends GetxController {
 
   void _onWsMessage(dynamic raw) {
     try {
+      print('Received WS message: $raw');
       final Map<String, dynamic> payload = jsonDecode(raw as String) as Map<String, dynamic>;
       if (payload['type'] == 'notification' && payload['notification'] != null) {
         final notif = payload['notification'] as Map<String, dynamic>;
@@ -116,10 +118,12 @@ class SocialController extends GetxController {
   }
 
   void _onWsDone() {
+    print('WS connection closed');
     _scheduleReconnect();
   }
 
   void _onWsError(error) {
+    print('WS error: $error');
     _scheduleReconnect();
   }
 
