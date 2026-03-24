@@ -5,6 +5,7 @@
 - `flutter_twitter_clone/`：Flutter 客户端（GetX）
 - `backend/`：Node.js + Express + MySQL API
 - `admin-web/`：Vue3 + Element Plus + Pinia 后台管理系统
+- `wechat_miniprogram/`：微信小程序客户端（含 5 栏 Tab Bar）
 
 ## 1) 启动后端
 ```bash
@@ -53,11 +54,18 @@ flutter run --dart-define=APP_ENV=prod --dart-define=API_URL_PROD=https://api.yo
 flutter run --dart-define=APP_ENV=prod --dart-define=API_URL=https://hotfix-api.your-domain.com/api
 ```
 
+## 4) 启动微信小程序
+```bash
+# 使用微信开发者工具打开 wechat_miniprogram 目录
+```
+
 ## 结构
 ```text
 .
 ├── backend
 │   └── src
-└── flutter_twitter_clone
-    └── lib/app
+├── flutter_twitter_clone
+│   └── lib/app
+└── wechat_miniprogram
+    └── pages
 ```
