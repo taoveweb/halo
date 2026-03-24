@@ -24,6 +24,16 @@ class SplashView extends GetView<SplashController> {
   }
 
   Widget _buildLogo() {
+    if (AppConstants.splashLogoAsset.isNotEmpty) {
+      return Image.asset(
+        AppConstants.splashLogoAsset,
+        width: 96,
+        height: 96,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => _logoFallback(),
+      );
+    }
+
     if (AppConstants.splashLogoUrl.isNotEmpty) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(16),
@@ -32,12 +42,27 @@ class SplashView extends GetView<SplashController> {
           width: 96,
           height: 96,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _logoText(),
+          errorBuilder: (_, __, ___) => _logoFallback(),
         ),
       );
     }
 
-    return _logoText();
+    return _logoFallback();
+  }
+
+  Widget _logoFallback() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(
+          Icons.flutter_dash_rounded,
+          size: 72,
+          color: AppConstants.brandColor,
+        ),
+        const SizedBox(height: 8),
+        _logoText(),
+      ],
+    );
   }
 
   Widget _logoText() {
