@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 
 class AppConstants {
+  /// 启动 Logo 资源路径（本地包内图片）。
+  static const String splashLogoAsset = String.fromEnvironment(
+    'APP_SPLASH_LOGO_ASSET',
+    defaultValue: '',
+  );
+
   /// 启动 Logo 图片地址，支持 http/https。
   static const String splashLogoUrl = String.fromEnvironment('APP_SPLASH_LOGO_URL');
 
