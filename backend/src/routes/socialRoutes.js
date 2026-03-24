@@ -3,9 +3,11 @@ import { Router } from 'express';
 import {
   getChats,
   getNotifications,
+  getChatDetail,
   markAllNotificationsRead,
   markNotificationRead,
   openChat,
+  sendChatMessage,
   togglePinChat
 } from '../controllers/socialController.js';
 import { pushNotificationToHandle } from '../controllers/socialController.js';
@@ -26,7 +28,9 @@ router.post('/internal/notify', (req, res) => {
 });
 
 router.get('/chats', optionalAuth, getChats);
+router.get('/chats/:id', requireAuth, getChatDetail);
 router.post('/chats/:id/open', requireAuth, openChat);
+router.post('/chats/:id/messages', requireAuth, sendChatMessage);
 router.post('/chats/:id/pin', requireAuth, togglePinChat);
 
 export default router;

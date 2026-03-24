@@ -1,3 +1,5 @@
+import '../models/chat_detail_model.dart';
+import '../models/chat_message_model.dart';
 import '../models/chat_model.dart';
 import '../models/comment_model.dart';
 import '../models/community_model.dart';
@@ -110,6 +112,20 @@ class TweetService {
   Future<List<ChatModel>> fetchChats() async {
     final data = await _provider.fetchChats();
     return data.map((item) => ChatModel.fromJson(item as Map<String, dynamic>)).toList();
+  }
+
+
+  Future<ChatDetailModel> fetchChatDetail(String chatId) async {
+    final data = await _provider.fetchChatDetail(chatId);
+    return ChatDetailModel.fromJson(data);
+  }
+
+  Future<ChatMessageModel> sendChatMessage({
+    required String chatId,
+    required String text,
+  }) async {
+    final data = await _provider.sendChatMessage(chatId: chatId, text: text);
+    return ChatMessageModel.fromJson(data);
   }
 
   Future<ChatModel> openChat(String chatId) async {

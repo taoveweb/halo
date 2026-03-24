@@ -199,6 +199,30 @@ class TweetProvider {
     return jsonDecode(response.body) as List<dynamic>;
   }
 
+
+  Future<Map<String, dynamic>> fetchChatDetail(String chatId) async {
+    final response = await _apiClient.get('/chats/$chatId');
+
+    if (response.statusCode != 200) {
+      throw Exception('加载会话详情失败: ${response.body}');
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> sendChatMessage({
+    required String chatId,
+    required String text,
+  }) async {
+    final response = await _apiClient.post('/chats/$chatId/messages', body: {'text': text});
+
+    if (response.statusCode != 201) {
+      throw Exception('发送消息失败: ${response.body}');
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> openChat(String chatId) async {
     final response = await _apiClient.post('/chats/$chatId/open', body: {});
 

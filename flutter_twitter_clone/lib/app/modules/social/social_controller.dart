@@ -3,6 +3,8 @@ import 'dart:convert';
 
 import 'package:get/get.dart';
 
+import '../../data/models/chat_detail_model.dart';
+import '../../data/models/chat_message_model.dart';
 import '../../data/models/chat_model.dart';
 import '../../data/models/community_model.dart';
 import '../../data/models/notification_model.dart';
@@ -27,6 +29,8 @@ class SocialController extends GetxController {
   final RxList<NotificationModel> notifications = <NotificationModel>[].obs;
   final RxInt unreadNotificationCount = 0.obs;
   final RxList<ChatModel> chats = <ChatModel>[].obs;
+  final Rxn<ChatDetailModel> activeChatDetail = Rxn<ChatDetailModel>();
+  final RxBool chatDetailLoading = false.obs;
 
   final RxList<CommunityModel> communities = <CommunityModel>[].obs;
   final RxBool communityLoading = false.obs;
@@ -359,6 +363,40 @@ class SocialController extends GetxController {
     if (index != -1) {
       chats[index] = updated;
     }
+  }
+
+  Future<void> openChatDetail(ChatModel item) async {
+    await openChat(item);
+    Get.toNamed(AppRoutes.messageDetail, arguments: {'chat': item});
+  }
+
+  Future<void> loadChatDetail(String chatId) async {
+    try {
+      chatDetailLoading.value = true;
+      final detail = await _tweetService.fetchChatDetail(chatId);
+      activeChatDetail.value = detail;
+    } finally {
+      chatDetailLoading.value = false;
+    }
+  }
+
+  Future<void> sendMessage(String chatId, String text) async {
+    final content = text.trim();
+    if (content.isEmpty) return;
+    final message = await _tweetService.sendChatMessage(chatId: chatId, text: content);
+    final detail = activeChatDetail.value;
+    if (detail != null && detail.id == chatId) {
+      activeChatDetail.value = ChatDetailModel(
+        id: detail.id,
+        name: detail.name,
+        handle: detail.handle,
+        avatar: detail.avatar,
+        joinedAt: detail.joinedAt,
+        createdDate: detail.createdDate,
+        messages: [...detail.messages, message],
+      );
+    }
+    await loadChats();
   }
 
   Future<void> togglePinChat(ChatModel item) async {
