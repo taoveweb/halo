@@ -5,19 +5,19 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/network/api_client.dart';
 import '../../data/models/auth_user_model.dart';
-import '../../data/providers/tweet_provider.dart';
 import '../../data/services/auth_service.dart';
 import '../../routes/app_routes.dart';
 
 class AuthController extends GetxController {
-  AuthController(this._authService, this._tweetProvider);
+  AuthController(this._authService, this._apiClient);
 
   static const _sessionTokenKey = 'session_token';
   static const _sessionUserKey = 'session_user';
 
   final AuthService _authService;
-  final TweetProvider _tweetProvider;
+  final ApiClient _apiClient;
 
   final Rxn<AuthUserModel> currentUser = Rxn<AuthUserModel>();
   final RxnString token = RxnString();
@@ -48,16 +48,16 @@ class AuthController extends GetxController {
       }
 
       token.value = savedToken;
-      _tweetProvider.setAuthToken(savedToken);
+      _apiClient.setAuthToken(savedToken);
 
       final savedUserMap = jsonDecode(savedUserRaw) as Map<String, dynamic>;
       currentUser.value = AuthUserModel.fromJson(savedUserMap);
 
-      final verifiedUser = await _authService.fetchMe(savedToken);
+      final verifiedUser = await _authService.fetchMe();
       currentUser.value = verifiedUser;
       await prefs.setString(_sessionUserKey, jsonEncode(verifiedUser.toJson()));
 
-      if (Get.currentRoute == AppRoutes.login) {
+      if (Get.currentRoute == AppRoutes.login || Get.currentRoute == AppRoutes.splash) {
         Get.offAllNamed(AppRoutes.home);
       }
     } catch (_) {
@@ -70,7 +70,7 @@ class AuthController extends GetxController {
   Future<void> _saveSession({required String sessionToken, required AuthUserModel user}) async {
     token.value = sessionToken;
     currentUser.value = user;
-    _tweetProvider.setAuthToken(sessionToken);
+    _apiClient.setAuthToken(sessionToken);
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_sessionTokenKey, sessionToken);
@@ -80,7 +80,7 @@ class AuthController extends GetxController {
   Future<void> _clearSession() async {
     token.value = null;
     currentUser.value = null;
-    _tweetProvider.setAuthToken(null);
+    _apiClient.setAuthToken(null);
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_sessionTokenKey);
@@ -138,10 +138,9 @@ class AuthController extends GetxController {
   }
 
   Future<void> logout() async {
-    final currentToken = token.value;
     try {
-      if (currentToken != null && currentToken.isNotEmpty) {
-        await _authService.logout(currentToken);
+      if (token.value != null && token.value!.isNotEmpty) {
+        await _authService.logout();
       }
     } finally {
       await _clearSession();
@@ -159,13 +158,11 @@ class AuthController extends GetxController {
     String? currentPassword,
     String? newPassword,
   }) async {
-    final currentToken = token.value;
-    if (currentToken == null || currentToken.isEmpty) {
+    if (token.value == null || token.value!.isEmpty) {
       throw Exception('当前未登录');
     }
 
     final updatedUser = await _authService.updateProfile(
-      token: currentToken,
       name: name,
       handle: handle,
       email: email,
@@ -174,16 +171,15 @@ class AuthController extends GetxController {
       currentPassword: currentPassword,
       newPassword: newPassword,
     );
-    await _saveSession(sessionToken: currentToken, user: updatedUser);
+    await _saveSession(sessionToken: token.value!, user: updatedUser);
   }
 
   Future<String> uploadAvatar(Uint8List bytes, {String mimeType = 'image/jpeg'}) async {
-    final currentToken = token.value;
-    if (currentToken == null || currentToken.isEmpty) {
+    if (token.value == null || token.value!.isEmpty) {
       throw Exception('当前未登录');
     }
 
-    return _authService.uploadAvatar(token: currentToken, bytes: bytes, mimeType: mimeType);
+    return _authService.uploadAvatar(bytes: bytes, mimeType: mimeType);
   }
 
   @override

@@ -1,18 +1,18 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:http/http.dart' as http;
-
-import '../../core/constants/api_constants.dart';
+import '../../core/network/api_client.dart';
 
 class AuthProvider {
-  final http.Client _client = http.Client();
+  AuthProvider(this._apiClient);
+
+  final ApiClient _apiClient;
 
   Future<Map<String, dynamic>> login({required String email, required String password}) async {
-    final response = await _client.post(
-      Uri.parse('${ApiConstants.baseUrl}/auth/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email, 'password': password}),
+    final response = await _apiClient.post(
+      '/auth/login',
+      withAuth: false,
+      body: {'email': email, 'password': password},
     );
 
     if (response.statusCode != 200) {
@@ -29,16 +29,16 @@ class AuthProvider {
     required String password,
     String? avatarUrl,
   }) async {
-    final response = await _client.post(
-      Uri.parse('${ApiConstants.baseUrl}/auth/register'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
+    final response = await _apiClient.post(
+      '/auth/register',
+      withAuth: false,
+      body: {
         'name': name,
         'handle': handle,
         'email': email,
         'password': password,
         'avatarUrl': avatarUrl,
-      }),
+      },
     );
 
     if (response.statusCode != 201) {
@@ -48,14 +48,8 @@ class AuthProvider {
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
-  Future<Map<String, dynamic>> fetchMe(String token) async {
-    final response = await _client.get(
-      Uri.parse('${ApiConstants.baseUrl}/auth/me'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
+  Future<Map<String, dynamic>> fetchMe() async {
+    final response = await _apiClient.get('/auth/me');
 
     if (response.statusCode != 200) {
       throw Exception('登录状态失效: ${response.body}');
@@ -65,7 +59,6 @@ class AuthProvider {
   }
 
   Future<Map<String, dynamic>> updateProfile({
-    required String token,
     String? name,
     String? handle,
     String? email,
@@ -88,14 +81,7 @@ class AuthProvider {
       payload['newPassword'] = newPassword;
     }
 
-    final response = await _client.patch(
-      Uri.parse('${ApiConstants.baseUrl}/auth/profile'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode(payload),
-    );
+    final response = await _apiClient.patch('/auth/profile', body: payload);
 
     if (response.statusCode != 200) {
       throw Exception('更新资料失败: ${response.body}');
@@ -105,20 +91,15 @@ class AuthProvider {
   }
 
   Future<String> uploadAvatar({
-    required String token,
     required Uint8List bytes,
     String mimeType = 'image/jpeg',
   }) async {
     final base64Image = base64Encode(bytes);
-    final response = await _client.post(
-      Uri.parse('${ApiConstants.baseUrl}/auth/avatar'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
+    final response = await _apiClient.post(
+      '/auth/avatar',
+      body: {
         'imageBase64': 'data:$mimeType;base64,$base64Image',
-      }),
+      },
     );
 
     if (response.statusCode != 201) {
@@ -133,13 +114,7 @@ class AuthProvider {
     return avatarUrl;
   }
 
-  Future<void> logout(String token) async {
-    await _client.post(
-      Uri.parse('${ApiConstants.baseUrl}/auth/logout'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
+  Future<void> logout() async {
+    await _apiClient.post('/auth/logout');
   }
 }

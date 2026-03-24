@@ -44,13 +44,12 @@ class AuthService {
     );
   }
 
-  Future<AuthUserModel> fetchMe(String token) async {
-    final data = await _provider.fetchMe(token);
+  Future<AuthUserModel> fetchMe() async {
+    final data = await _provider.fetchMe();
     return AuthUserModel.fromJson(data);
   }
 
   Future<AuthUserModel> updateProfile({
-    required String token,
     String? name,
     String? handle,
     String? email,
@@ -60,7 +59,6 @@ class AuthService {
     String? newPassword,
   }) async {
     final data = await _provider.updateProfile(
-      token: token,
       name: name,
       handle: handle,
       email: email,
@@ -72,15 +70,14 @@ class AuthService {
     return AuthUserModel.fromJson(data);
   }
 
-  Future<void> logout(String token) {
-    return _provider.logout(token);
+  Future<void> logout() {
+    return _provider.logout();
   }
 
   Future<String> uploadAvatar({
-    required String token,
     required Uint8List bytes,
     String mimeType = 'image/jpeg',
   }) {
-    return _provider.uploadAvatar(token: token, bytes: bytes, mimeType: mimeType);
+    return _provider.uploadAvatar(bytes: bytes, mimeType: mimeType);
   }
 }
