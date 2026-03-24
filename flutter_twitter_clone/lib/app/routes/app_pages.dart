@@ -8,12 +8,14 @@ import '../modules/messages/messages_view.dart';
 import '../modules/notifications/notifications_view.dart';
 import '../modules/profile/profile_view.dart';
 import '../modules/search/search_view.dart';
+import '../modules/splash/splash_view.dart';
 import '../modules/tweet_detail/tweet_detail_view.dart';
 import 'auth_middleware.dart';
 import 'app_routes.dart';
 
 class AppPages {
   static final pages = <GetPage<dynamic>>[
+    GetPage(name: AppRoutes.splash, page: () => const SplashView()),
     GetPage(name: AppRoutes.login, page: () => const AuthView()),
     GetPage(name: AppRoutes.home, page: () => const HomeView(), middlewares: [AuthMiddleware()]),
     GetPage(name: AppRoutes.search, page: () => const SearchView(), middlewares: [AuthMiddleware()]),
