@@ -1,0 +1,5 @@
+<view class="container">
+  <view class="page-title">通知</view>
+  <view class="page-desc">这里已接入与 Flutter 客户端一致的 5 栏底部导航（首页、搜索、社区、通知、消息）。后续可在本页补充业务内容。</view>
+</view>
+<tab-bar current="notifications"></tab-bar>

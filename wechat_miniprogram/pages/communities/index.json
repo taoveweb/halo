@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "社区",
+  "usingComponents": {
+    "tab-bar": "/components/tab-bar/index"
+  }
+}

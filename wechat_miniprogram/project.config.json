@@ -1,0 +1,17 @@
+{
+  "description": "Halo 微信小程序客户端",
+  "packOptions": {
+    "ignore": []
+  },
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true
+  },
+  "compileType": "miniprogram",
+  "libVersion": "2.32.3",
+  "appid": "touristappid",
+  "projectname": "halo-miniprogram"
+}
