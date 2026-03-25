@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/constants/app_constants.dart';
 import '../../core/network/api_client.dart';
 import '../../data/models/auth_user_model.dart';
 import '../../data/services/auth_service.dart';
@@ -53,7 +54,9 @@ class AuthController extends GetxController {
       final savedUserMap = jsonDecode(savedUserRaw) as Map<String, dynamic>;
       currentUser.value = AuthUserModel.fromJson(savedUserMap);
 
-      final verifiedUser = await _authService.fetchMe();
+      final verifiedUser = await _authService
+          .fetchMe()
+          .timeout(Duration(milliseconds: AppConstants.authBootstrapTimeoutMs));
       currentUser.value = verifiedUser;
       await prefs.setString(_sessionUserKey, jsonEncode(verifiedUser.toJson()));
 

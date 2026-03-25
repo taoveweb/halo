@@ -22,5 +22,11 @@ class AppConstants {
     defaultValue: 1200,
   );
 
+  /// 启动阶段恢复会话时，校验登录态请求超时时间（毫秒）。
+  static const int authBootstrapTimeoutMs = int.fromEnvironment(
+    'APP_AUTH_BOOTSTRAP_TIMEOUT_MS',
+    defaultValue: 6000,
+  );
+
   static const Color brandColor = Color(0xFF1D9BF0);
 }
