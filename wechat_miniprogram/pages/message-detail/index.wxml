@@ -1,0 +1,15 @@
+<view class="container">
+  <view class="page-title">会话详情</view>
+  <view wx:if="{{chat}}">
+    <view wx:for="{{chat.messages}}" wx:key="id" class="card">
+      <view class="row">
+        <view>{{item.senderName}}</view>
+        <view class="muted">{{item.createdAtLabel}}</view>
+      </view>
+      <view style="margin-top: 8rpx;">{{item.text}}</view>
+    </view>
+  </view>
+
+  <input class="input" placeholder="输入消息" value="{{text}}" bindinput="onInput" />
+  <button class="btn" bindtap="send">发送</button>
+</view>

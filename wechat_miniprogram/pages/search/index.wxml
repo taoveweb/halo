@@ -1,5 +1,19 @@
 <view class="container">
   <view class="page-title">搜索</view>
-  <view class="page-desc">这里已接入与 Flutter 客户端一致的 5 栏底部导航（首页、搜索、社区、通知、消息）。后续可在本页补充业务内容。</view>
+  <input class="input" placeholder="搜索动态/话题" value="{{query}}" bindinput="onInput" confirm-type="search" bindconfirm="search" />
+
+  <view class="card">
+    <view style="font-weight: 700; margin-bottom: 12rpx;">话题</view>
+    <view wx:for="{{topics}}" wx:key="id" class="row" style="margin-bottom: 10rpx;">
+      <view>#{{item.title}}</view>
+      <button class="btn {{item.followedByMe ? 'btn-secondary' : ''}}" size="mini" data-id="{{item.id}}" data-active="{{item.followedByMe}}" bindtap="toggleTopic">
+        {{item.followedByMe ? '已关注' : '关注'}}
+      </button>
+    </view>
+  </view>
+
+  <view wx:for="{{tweets}}" wx:key="id" class="card" data-id="{{item.id}}" bindtap="goTweetDetail">
+    <view>{{item.authorName}}: {{item.content}}</view>
+  </view>
 </view>
 <tab-bar current="search"></tab-bar>
