@@ -138,6 +138,12 @@ class TweetService {
     return ChatModel.fromJson(data);
   }
 
+
+  Future<String> chatWithAi({required String prompt}) async {
+    final data = await _provider.chatWithAi(prompt: prompt);
+    return (data['reply'] ?? '').toString();
+  }
+
   Future<TweetModel> recordTweetView(String tweetId) async {
     final data = await _provider.recordTweetView(tweetId);
     return TweetModel.fromJson(data);

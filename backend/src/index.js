@@ -13,6 +13,7 @@ import tweetRoutes from './routes/tweetRoutes.js';
 import topicRoutes from './routes/topicRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import socialRoutes from './routes/socialRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -35,6 +36,7 @@ app.use('/api', topicRoutes);
 app.use('/api', communityRoutes);
 app.use('/api', adminRoutes);
 app.use('/api', socialRoutes);
+app.use('/api', aiRoutes);
 app.use(notFound);
 app.use(errorHandler);
 

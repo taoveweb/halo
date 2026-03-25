@@ -243,6 +243,17 @@ class TweetProvider {
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
+
+  Future<Map<String, dynamic>> chatWithAi({required String prompt}) async {
+    final response = await _apiClient.post('/ai/chat', body: {'prompt': prompt});
+
+    if (response.statusCode != 200) {
+      throw Exception('AI 对话失败: ${response.body}');
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> recordTweetView(String tweetId) async {
     final response = await _apiClient.post('/tweets/$tweetId/view', body: {});
 
