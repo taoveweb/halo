@@ -4,7 +4,12 @@
     "pages/search/index",
     "pages/communities/index",
     "pages/notifications/index",
-    "pages/messages/index"
+    "pages/messages/index",
+    "pages/auth/index",
+    "pages/compose/index",
+    "pages/tweet-detail/index",
+    "pages/message-detail/index",
+    "pages/profile/index"
   ],
   "window": {
     "navigationBarTitleText": "Halo",

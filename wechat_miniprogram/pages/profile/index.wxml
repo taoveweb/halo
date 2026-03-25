@@ -1,0 +1,16 @@
+<view class="container">
+  <view class="page-title">我的资料</view>
+  <view class="card" wx:if="{{me}}">
+    <view class="muted">用户 ID: {{me.id}}</view>
+  </view>
+
+  <input class="input" placeholder="昵称" data-key="name" value="{{name}}" bindinput="onInput" />
+  <input class="input" placeholder="handle" data-key="handle" value="{{handle}}" bindinput="onInput" />
+  <input class="input" placeholder="邮箱" data-key="email" value="{{email}}" bindinput="onInput" />
+
+  <input class="input" password placeholder="当前密码(可选)" data-key="currentPassword" value="{{currentPassword}}" bindinput="onInput" />
+  <input class="input" password placeholder="新密码(可选)" data-key="newPassword" value="{{newPassword}}" bindinput="onInput" />
+
+  <button class="btn" bindtap="save">保存资料</button>
+  <button class="btn btn-secondary" style="margin-top: 16rpx;" bindtap="logout">退出登录</button>
+</view>

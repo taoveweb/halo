@@ -1,1 +1,1 @@
-/* inherit global styles */
+@import "../../app.wxss";
