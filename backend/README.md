@@ -24,6 +24,7 @@ npm run dev
 - `POST /api/tweets`（需要 Bearer Token）
 - `GET /api/tweets/:id/comments`
 - `POST /api/tweets/:id/comments`（需要 Bearer Token）
+- `POST /api/ai/chat`（可选 Bearer Token，需要在后端配置 `OPENAI_API_KEY`）
 
 ### `POST /api/auth/register` body 示例
 ```json
@@ -66,3 +67,13 @@ npm run dev
 - 密码：`admin123456`
 
 > 可通过 `.env` 中的 `ADMIN_USERNAME`、`ADMIN_PASSWORD` 覆盖默认账号。
+
+## AI 对话配置
+在 `backend/.env` 中新增：
+
+```env
+OPENAI_API_KEY=你的OpenAIKey
+OPENAI_MODEL=gpt-4.1-mini
+```
+
+前端 `社群` 中间页会调用 `POST /api/ai/chat` 进行 AI 对话。
