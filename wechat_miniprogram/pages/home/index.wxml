@@ -1,0 +1,31 @@
+<view class="container">
+  <view class="row" style="margin-bottom: 16rpx;">
+    <view class="page-title">首页</view>
+    <view>
+      <button class="btn btn-secondary" size="mini" bindtap="goProfile">我</button>
+      <button class="btn" size="mini" bindtap="goCompose" style="margin-left: 12rpx;">发布</button>
+    </view>
+  </view>
+
+  <view class="row" style="margin-bottom: 16rpx;">
+    <button class="btn {{feed==='forYou' ? '' : 'btn-secondary'}}" size="mini" data-feed="forYou" bindtap="switchFeed">推荐</button>
+    <button class="btn {{feed==='following' ? '' : 'btn-secondary'}}" size="mini" data-feed="following" bindtap="switchFeed">关注</button>
+  </view>
+
+  <view wx:if="{{loading}}" class="muted">加载中...</view>
+
+  <view wx:for="{{tweets}}" wx:key="id" class="card" data-id="{{item.id}}" bindtap="goTweetDetail">
+    <view class="row">
+      <view>{{item.authorName}} @{{item.authorHandle}}</view>
+      <view class="muted">{{item.createdAtLabel}}</view>
+    </view>
+    <view style="margin: 12rpx 0;">{{item.content}}</view>
+    <view class="row muted">
+      <view>💬 {{item.replyCount}}</view>
+      <view data-id="{{item.id}}" data-action="retweet" data-active="{{item.retweetedByMe}}" catchtap="toggleAction">🔁 {{item.retweetCount}}</view>
+      <view data-id="{{item.id}}" data-action="like" data-active="{{item.likedByMe}}" catchtap="toggleAction">❤️ {{item.likeCount}}</view>
+      <view>👁️ {{item.viewCount}}</view>
+    </view>
+  </view>
+</view>
+<tab-bar current="home"></tab-bar>

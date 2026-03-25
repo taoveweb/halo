@@ -1,0 +1,5 @@
+<view class="container">
+  <view class="page-title">发布动态</view>
+  <textarea class="textarea" maxlength="280" placeholder="分享此刻想法..." value="{{content}}" bindinput="onInput"></textarea>
+  <button class="btn" bindtap="submit">发布</button>
+</view>

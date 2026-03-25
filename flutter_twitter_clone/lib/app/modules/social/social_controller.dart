@@ -3,6 +3,8 @@ import 'dart:convert';
 
 import 'package:get/get.dart';
 
+import '../../data/models/chat_detail_model.dart';
+import '../../data/models/chat_message_model.dart';
 import '../../data/models/chat_model.dart';
 import '../../data/models/community_model.dart';
 import '../../data/models/notification_model.dart';
@@ -13,6 +15,13 @@ import '../../routes/app_routes.dart';
 import '../../core/constants/api_constants.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../auth/auth_controller.dart';
+
+class AiChatMessage {
+  AiChatMessage({required this.text, required this.isUser});
+
+  final String text;
+  final bool isUser;
+}
 
 class SocialController extends GetxController {
   SocialController(this._tweetService);
@@ -27,12 +36,21 @@ class SocialController extends GetxController {
   final RxList<NotificationModel> notifications = <NotificationModel>[].obs;
   final RxInt unreadNotificationCount = 0.obs;
   final RxList<ChatModel> chats = <ChatModel>[].obs;
+  final Rxn<ChatDetailModel> activeChatDetail = Rxn<ChatDetailModel>();
+  final RxBool chatDetailLoading = false.obs;
 
   final RxList<CommunityModel> communities = <CommunityModel>[].obs;
   final RxBool communityLoading = false.obs;
   final RxnString communityError = RxnString();
   final RxSet<String> communityUpdating = <String>{}.obs;
   final RxList<TweetModel> searchTweets = <TweetModel>[].obs;
+
+  final RxList<AiChatMessage> aiMessages = <AiChatMessage>[
+    AiChatMessage(text: '你好，我是 Halo AI 助手，有什么我可以帮你？', isUser: false),
+  ].obs;
+  final RxBool aiSending = false.obs;
+  final RxnString aiError = RxnString();
+
   final RxBool searchLoading = false.obs;
   final RxnString searchError = RxnString();
 
@@ -361,9 +379,75 @@ class SocialController extends GetxController {
     }
   }
 
+  Future<void> openChatDetail(ChatModel item) async {
+    await openChat(item);
+    Get.toNamed(AppRoutes.messageDetail, arguments: {'chat': item});
+  }
+
+  Future<void> loadChatDetail(String chatId) async {
+    try {
+      chatDetailLoading.value = true;
+      final detail = await _tweetService.fetchChatDetail(chatId);
+      activeChatDetail.value = detail;
+    } finally {
+      chatDetailLoading.value = false;
+    }
+  }
+
+  Future<void> sendMessage(String chatId, String text) async {
+    final content = text.trim();
+    if (content.isEmpty) return;
+    final message = await _tweetService.sendChatMessage(chatId: chatId, text: content);
+    final detail = activeChatDetail.value;
+    if (detail != null && detail.id == chatId) {
+      activeChatDetail.value = ChatDetailModel(
+        id: detail.id,
+        name: detail.name,
+        handle: detail.handle,
+        avatar: detail.avatar,
+        joinedAt: detail.joinedAt,
+        createdDate: detail.createdDate,
+        messages: [...detail.messages, message],
+      );
+    }
+    await loadChats();
+  }
+
   Future<void> togglePinChat(ChatModel item) async {
     await _tweetService.togglePinChat(item.id);
     await loadChats();
+  }
+
+
+  Future<void> askAi(String prompt) async {
+    final content = prompt.trim();
+    if (content.isEmpty || aiSending.value) {
+      return;
+    }
+
+    aiError.value = null;
+    aiMessages.add(AiChatMessage(text: content, isUser: true));
+    aiSending.value = true;
+
+    try {
+      final reply = await _tweetService.chatWithAi(prompt: content);
+      aiMessages.add(
+        AiChatMessage(
+          text: reply.isEmpty ? '收到啦，不过我暂时没有生成内容。' : reply,
+          isUser: false,
+        ),
+      );
+    } catch (error) {
+      aiError.value = error.toString();
+      aiMessages.add(
+        AiChatMessage(
+          text: '抱歉，我刚刚开小差了，请稍后重试。',
+          isUser: false,
+        ),
+      );
+    } finally {
+      aiSending.value = false;
+    }
   }
 
   Future<void> joinCommunity(CommunityModel item) async {

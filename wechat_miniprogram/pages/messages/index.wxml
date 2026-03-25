@@ -1,0 +1,12 @@
+<view class="container">
+  <view class="page-title">消息</view>
+  <view wx:for="{{chats}}" wx:key="id" class="card" data-id="{{item.id}}" bindtap="goDetail">
+    <view class="row">
+      <view>{{item.title}}</view>
+      <view class="muted">{{item.updatedAtLabel}}</view>
+    </view>
+    <view class="muted" style="margin: 8rpx 0;">{{item.lastMessagePreview}}</view>
+    <button class="btn btn-secondary" size="mini" data-id="{{item.id}}" catchtap="togglePin">{{item.pinnedByMe ? '取消置顶' : '置顶'}}</button>
+  </view>
+</view>
+<tab-bar current="messages"></tab-bar>

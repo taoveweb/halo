@@ -1,0 +1,13 @@
+<view class="container">
+  <view class="row" style="margin-bottom: 16rpx;">
+    <view class="page-title">通知</view>
+    <button class="btn btn-secondary" size="mini" bindtap="readAll">全部已读</button>
+  </view>
+
+  <view wx:for="{{notifications}}" wx:key="id" class="card" data-id="{{item.id}}" bindtap="markRead">
+    <view>{{item.title}}</view>
+    <view class="muted" style="margin-top:8rpx;">{{item.body}}</view>
+    <view class="muted" style="margin-top:8rpx;">{{item.createdAtLabel}} · {{item.readAt ? '已读' : '未读'}}</view>
+  </view>
+</view>
+<tab-bar current="notifications"></tab-bar>

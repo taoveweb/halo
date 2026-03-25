@@ -6,6 +6,9 @@ class ChatModel {
     required this.time,
     required this.unreadCount,
     required this.pinned,
+    required this.handle,
+    required this.avatar,
+    required this.joinedAt,
   });
 
   final String id;
@@ -14,6 +17,9 @@ class ChatModel {
   final String time;
   final int unreadCount;
   final bool pinned;
+  final String handle;
+  final String avatar;
+  final String joinedAt;
 
   factory ChatModel.fromJson(Map<String, dynamic> json) {
     return ChatModel(
@@ -23,6 +29,9 @@ class ChatModel {
       time: json['time']?.toString() ?? '',
       unreadCount: (json['unreadCount'] as num?)?.toInt() ?? 0,
       pinned: json['pinned'] == true,
+      handle: json['handle']?.toString() ?? '',
+      avatar: json['avatar']?.toString() ?? '',
+      joinedAt: json['joinedAt']?.toString() ?? '',
     );
   }
 }

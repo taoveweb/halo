@@ -10,7 +10,7 @@ class ApiConstants {
 
   static const String _devBaseUrl = String.fromEnvironment(
     'API_URL_DEV',
-    defaultValue: 'http://192.168.10.10:3000/api',
+    defaultValue: 'http://localhost:3000/api',
   );
 
   static const String _testBaseUrl = String.fromEnvironment(
@@ -20,7 +20,7 @@ class ApiConstants {
 
   static const String _prodBaseUrl = String.fromEnvironment(
     'API_URL_PROD',
-    defaultValue: 'http://192.168.10.10:3000/api',
+    defaultValue: 'http://localhost:3000/api',
   );
 
   /// 最终 API 地址：
@@ -40,3 +40,4 @@ class ApiConstants {
     }
   }
 }
+  

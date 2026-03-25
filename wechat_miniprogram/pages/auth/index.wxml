@@ -1,0 +1,13 @@
+<view class="container">
+  <view class="page-title">{{mode==='login' ? '登录' : '注册'}}</view>
+  <view class="row" style="margin-bottom: 16rpx;">
+    <button class="btn {{mode==='login' ? '' : 'btn-secondary'}}" data-mode="login" bindtap="switchMode">登录</button>
+    <button class="btn {{mode==='register' ? '' : 'btn-secondary'}}" data-mode="register" bindtap="switchMode">注册</button>
+  </view>
+
+  <input wx:if="{{mode==='register'}}" class="input" placeholder="昵称" data-key="name" bindinput="onInput" />
+  <input wx:if="{{mode==='register'}}" class="input" placeholder="账号(handle)" data-key="handle" bindinput="onInput" />
+  <input class="input" placeholder="邮箱" data-key="email" bindinput="onInput" />
+  <input class="input" password placeholder="密码" data-key="password" bindinput="onInput" />
+  <button class="btn" bindtap="submit">提交</button>
+</view>

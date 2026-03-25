@@ -1,0 +1,13 @@
+<view class="container">
+  <view class="page-title">社区</view>
+  <view wx:for="{{communities}}" wx:key="id" class="card">
+    <view class="row">
+      <view>{{item.name}}</view>
+      <button class="btn {{item.joinedByMe ? 'btn-secondary' : ''}}" size="mini" data-id="{{item.id}}" data-active="{{item.joinedByMe}}" bindtap="toggleJoin">
+        {{item.joinedByMe ? '已加入' : '加入'}}
+      </button>
+    </view>
+    <view class="muted" style="margin-top: 8rpx;">{{item.description}}</view>
+  </view>
+</view>
+<tab-bar current="communities"></tab-bar>
