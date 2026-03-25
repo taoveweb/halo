@@ -1,14 +1,19 @@
 {
   "description": "Halo 微信小程序客户端",
   "packOptions": {
+<<<<<<< HEAD
     "ignore": [],
     "include": []
+=======
+    "ignore": []
+>>>>>>> temp-save
   },
   "setting": {
     "urlCheck": false,
     "es6": true,
     "enhance": true,
     "postcss": true,
+<<<<<<< HEAD
     "minified": true,
     "babelSetting": {
       "ignore": [],
@@ -26,3 +31,12 @@
     "tabSize": 2
   }
 }
+=======
+    "minified": true
+  },
+  "compileType": "miniprogram",
+  "libVersion": "2.32.3",
+  "appid": "touristappid",
+  "projectname": "halo-miniprogram"
+}
+>>>>>>> temp-save

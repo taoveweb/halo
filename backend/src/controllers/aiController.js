@@ -1,7 +1,11 @@
 const OPENAI_API_URL = 'https://api.openai.com/v1/responses';
 const DEFAULT_MODEL = process.env.OPENAI_MODEL || 'gpt-4.1-mini';
+<<<<<<< HEAD
 import { HttpsProxyAgent } from 'https-proxy-agent'
 const proxyAgent = new HttpsProxyAgent('http://172.20.10.1:8899')
+=======
+
+>>>>>>> temp-save
 export async function chatWithAi(req, res, next) {
   try {
     const prompt = `${req.body?.prompt ?? ''}`.trim();
@@ -19,7 +23,14 @@ export async function chatWithAi(req, res, next) {
     const userLabel = req.user?.handle || req.user?.email || 'anonymous';
     const response = await fetch(OPENAI_API_URL, {
       method: 'POST',
+<<<<<<< HEAD
        // ✅ 关键在这里
+=======
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+>>>>>>> temp-save
       body: JSON.stringify({
         model: DEFAULT_MODEL,
         temperature: 0.7,
@@ -44,7 +55,10 @@ export async function chatWithAi(req, res, next) {
           user: userLabel,
         },
       }),
+<<<<<<< HEAD
       agent: proxyAgent, 
+=======
+>>>>>>> temp-save
     });
 
     if (!response.ok) {
@@ -68,7 +82,10 @@ export async function chatWithAi(req, res, next) {
       responseId: data?.id ?? null,
     });
   } catch (error) {
+<<<<<<< HEAD
     console.log(error,'error')
+=======
+>>>>>>> temp-save
     return next(error);
   }
 }
